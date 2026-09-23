@@ -1,1436 +1,1811 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <!-- Microsoft Authentication Library (MSAL for JS) -->
-    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Estoque CPT</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (xlsx) para exportação de Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <style>
-        :root {
-            --sidebar-width: 250px;
-            --primary-color: #007e7a;
-            --primary-hover: #006360;
-            --secondary-color: #004d4a;
-            --accent-color: #00a8a3;
-            --bg-color: #f8fafc;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            overflow-x: hidden;
-        }
-        .btn-primary {
-            background-color: var(--primary-color) !important;
-            border-color: var(--primary-color) !important;
-        }
-        .btn-primary:hover, .btn-primary:focus {
-            background-color: var(--primary-hover) !important;
-            border-color: var(--primary-hover) !important;
-        }
-        .btn-outline-primary {
-            color: var(--primary-color) !important;
-            border-color: var(--primary-color) !important;
-        }
-        .btn-outline-primary:hover {
-            background-color: var(--primary-color) !important;
-            color: #fff !important;
-        }
-        .text-primary {
-            color: var(--primary-color) !important;
-        }
-        .bg-primary {
-            background-color: var(--primary-color) !important;
-        }
-        #sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: var(--secondary-color);
-            color: #fff;
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-        #sidebar .sidebar-header {
-            padding: 15px 20px;
-            background: #003634;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        #sidebar ul.components {
-            padding: 10px 0;
-        }
-        #sidebar ul li a {
-            padding: 12px 20px;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            color: #b2dfdb;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        #sidebar ul li a i {
-            margin-right: 12px;
-            width: 20px;
-            text-align: center;
-        }
-        #sidebar ul li a:hover, #sidebar ul li.active > a {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.12);
-            border-left: 4px solid var(--accent-color);
-        }
-        #content {
-            margin-left: var(--sidebar-width);
-            padding: 20px;
-            min-height: 100vh;
-            transition: all 0.3s;
-        }
-        .card {
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-        }
-        .card-header {
-            background-color: #fff;
-            border-bottom: 1px solid #f1f5f9;
-            font-weight: 600;
-            padding: 10px 15px;
-            border-top-left-radius: 8px !important;
-            border-top-right-radius: 8px !important;
-        }
-        .header-alerta-estoque {
-            background-color: #ECB11F !important;
-            color: #fff !important;
-            font-weight: 600;
-        }
-        .kpi-card-compact {
-            border-left: 4px solid var(--primary-color);
-            padding: 12px 15px !important;
-        }
-        .kpi-card-compact.warning {
-            border-left-color: #ef4444;
-        }
-        .kpi-card-compact.info {
-            border-left-color: #f59e0b;
-        }
-        .kpi-icon-compact {
-            font-size: 1.5rem;
-            opacity: 0.3;
-        }
-        .badge-low-stock {
-            background-color: #fee2e2;
-            color: #991b1b;
-            font-weight: 600;
-        }
-        .badge-ok-stock {
-            background-color: #e0f2f1;
-            color: #004d4a;
-            font-weight: 600;
-        }
-        .badge-epi {
-            background-color: #e0e7ff;
-            color: #3730a3;
-            font-weight: 600;
-        }
-        .img-thumbnail-preview {
-            width: 40px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .img-thumbnail-preview:hover {
-            transform: scale(1.1);
-        }
-        .quick-action-card-compact {
-            transition: all 0.2s;
-            cursor: pointer;
-            padding: 10px !important;
-        }
-        .quick-action-card-compact:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-            background-color: #f0fdfa;
-        }
-        .logo-container, .sidebar-icon-container {
-            position: relative;
-            display: inline-block;
-        }
-        .logo-img-custom {
-            max-height: 50px;
-            max-width: 180px;
-            object-fit: contain;
-            cursor: pointer;
-        }
-        .logo-overlay-icon {
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            background: rgba(0,0,0,0.6);
-            color: #fff;
-            border-radius: 50%;
-            padding: 3px 6px;
-            font-size: 0.65rem;
-            cursor: pointer;
-            display: none;
-        }
-        .logo-container:hover .logo-overlay-icon {
-            display: block;
-        }
-        .sortable-header {
-            cursor: pointer;
-            user-select: none;
-        }
-        .sortable-header:hover {
-            background-color: #e2e8f0;
-        }
-        @media (max-width: 768px) {
-            #sidebar {
-                margin-left: -250px;
-            }
-            #sidebar.active {
-                margin-left: 0;
-            }
-            #content {
-                margin-left: 0;
-            }
-            #content.active {
-                margin-left: 250px;
-            }
-        }
-    </style>
+  <!-- Microsoft Authentication Library (MSAL for JS) -->
+  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Estoque CPT</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS (xlsx) para exportação de Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    :root {
+      --sidebar-width: 250px;
+      --primary-color: #007e7a;
+      --primary-hover: #006360;
+      --secondary-color: #004d4a;
+      --accent-color: #00a8a3;
+      --bg-color: #f8fafc;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      overflow-x: hidden;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .btn-primary:hover, .btn-primary:focus {
+      background-color: var(--primary-hover) !important;
+      border-color: var(--primary-hover) !important;
+    }
+
+    .btn-outline-primary {
+      color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color) !important;
+      color: #fff !important;
+    }
+
+    .text-primary {
+      color: var(--primary-color) !important;
+    }
+
+    .bg-primary {
+      background-color: var(--primary-color) !important;
+    }
+
+    #sidebar {
+      width: var(--sidebar-width);
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background-color: var(--secondary-color);
+      color: #fff;
+      transition: all 0.3s;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar .sidebar-header {
+      padding: 15px 20px;
+      background: #003634;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #sidebar ul.components {
+      padding: 10px 0;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    #sidebar ul li a {
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      color: #b2dfdb;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    #sidebar ul li a i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    #sidebar ul li a:hover, #sidebar ul li.active > a {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .sidebar-footer {
+      padding: 15px;
+      background: #003634;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+    }
+
+    .app-badge-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .app-badge-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    #content {
+      margin-left: var(--sidebar-width);
+      padding: 20px;
+      min-height: 100vh;
+      transition: all 0.3s;
+    }
+
+    .card {
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      margin-bottom: 15px;
+    }
+
+    .card-header {
+      background-color: #fff;
+      border-bottom: 1px solid #f1f5f9;
+      font-weight: 600;
+      padding: 10px 15px;
+      border-top-left-radius: 8px !important;
+      border-top-right-radius: 8px !important;
+    }
+
+    .header-alerta-estoque {
+      background-color: #ECB11F !important;
+      color: #fff !important;
+      font-weight: 600;
+    }
+
+    .kpi-card-compact {
+      border-left: 4px solid var(--primary-color);
+      padding: 12px 15px !important;
+    }
+
+    .kpi-card-compact.warning {
+      border-left-color: #ef4444;
+    }
+
+    .kpi-card-compact.info {
+      border-left-color: #f59e0b;
+    }
+
+    .kpi-card-compact.success {
+      border-left-color: #10b981;
+    }
+
+    .kpi-icon-compact {
+      font-size: 1.5rem;
+      opacity: 0.35;
+    }
+
+    .badge-low-stock {
+      background-color: #fee2e2;
+      color: #991b1b;
+      font-weight: 600;
+    }
+
+    .badge-ok-stock {
+      background-color: #e0f2f1;
+      color: #004d4a;
+      font-weight: 600;
+    }
+
+    .badge-epi {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      font-weight: 600;
+    }
+
+    .img-thumbnail-preview {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .img-thumbnail-preview:hover {
+      transform: scale(1.1);
+    }
+
+    .quick-action-card-compact {
+      transition: all 0.2s;
+      cursor: pointer;
+      padding: 10px !important;
+    }
+
+    .quick-action-card-compact:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      background-color: #f0fdfa;
+    }
+
+    .logo-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .logo-img-custom {
+      max-height: 50px;
+      max-width: 180px;
+      object-fit: contain;
+      cursor: pointer;
+    }
+
+    .logo-overlay-icon {
+      position: absolute;
+      bottom: -5px;
+      right: -5px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border-radius: 50%;
+      padding: 3px 6px;
+      font-size: 0.65rem;
+      cursor: pointer;
+      display: none;
+    }
+
+    .logo-container:hover .logo-overlay-icon {
+      display: block;
+    }
+
+    .sortable-header {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sortable-header:hover {
+      background-color: #e2e8f0;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar {
+        margin-left: -250px;
+      }
+      #sidebar.active {
+        margin-left: 0;
+      }
+      #content {
+        margin-left: 0;
+      }
+      #content.active {
+        margin-left: 250px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <nav id="sidebar">
-        <div class="sidebar-header d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <div>
-                    <h5 class="m-0 text-white fw-bold">Gestão de Estoque</h5>
-                </div>
-            </div>
-        </div>
-        <ul class="list-unstyled components">
-            <li class="active">
-                <a href="#" onclick="showSection('inicio')"><i class="fa-solid fa-house"></i> Início</a>
-            </li>
-            <li>
-                <a href="#" onclick="showSection('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
-            </li>
-            <li>
-                <a href="#" onclick="showSection('materiais')"><i class="fa-solid fa-box"></i> Materiais</a>
-            </li>
-            <li>
-                <a href="#" onclick="showSection('compras')"><i class="fa-solid fa-cart-shopping"></i> Compras</a>
-            </li>
-            <li>
-                <a href="#" onclick="showSection('movimentacao')"><i class="fa-solid fa-arrow-right-arrow-left"></i> Movimentação</a>
-            </li>
-            <li>
-                <a href="#" onclick="showSection('backup')"><i class="fa-solid fa-database"></i> Backup / Dados</a>
-            </li>
-        </ul>
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-header d-flex align-items-center justify-content-between">
+      <div>
+        <h5 class="m-0 text-white fw-bold">Gestão de Estoque</h5>
+      </div>
+    </div>
+    
+    <ul class="list-unstyled components">
+      <li class="active">
+        <a href="#" onclick="showSection('inicio')"><i class="fa-solid fa-house"></i> Início</a>
+      </li>
+      <li>
+        <a href="#" onclick="showSection('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+      </li>
+      <li>
+        <a href="#" onclick="showSection('materiais')"><i class="fa-solid fa-box"></i> Materiais</a>
+      </li>
+      <li>
+        <a href="#" onclick="showSection('compras')"><i class="fa-solid fa-cart-shopping"></i> Compras</a>
+      </li>
+      <li>
+        <a href="#" onclick="showSection('movimentacao')"><i class="fa-solid fa-arrow-right-arrow-left"></i> Movimentação</a>
+      </li>
+      <li>
+        <a href="#" onclick="showSection('backup')"><i class="fa-solid fa-database"></i> Backup / Dados</a>
+      </li>
+    </ul>
+
+    <!-- Rodapé da Sidebar: App Mobile & Versão -->
+    <div class="sidebar-footer">
+      <div class="text-center text-light mb-2 opacity-75 fw-semibold" style="font-size: 0.72rem;">
+        <i class="fa-solid fa-mobile-screen-button me-1"></i> BAIXAR APP MOBILE
+      </div>
+      <div class="d-grid gap-1 mb-2">
+        <a href="#" class="app-badge-btn" onclick="baixarApp('Android'); return false;">
+          <i class="fa-brands fa-google-play text-warning"></i> Android (.APK)
+        </a>
+        <a href="#" class="app-badge-btn" onclick="baixarApp('iOS'); return false;">
+          <i class="fa-brands fa-apple text-info"></i> iOS (App Store)
+        </a>
+      </div>
+      <div class="text-center text-muted border-top border-secondary pt-2" style="font-size: 0.7rem;">
+        <span>CPT Estoque • <strong class="text-light">v1.2.0</strong></span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <div id="content">
+
+    <!-- Top Navbar Mobile -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light d-md-none mb-3 rounded shadow-sm">
+      <div class="container-fluid">
+        <button type="button" id="sidebarCollapse" class="btn btn-primary btn-sm">
+          <i class="fas fa-align-left"></i>
+        </button>
+        <span class="fw-bold text-primary">Sistema de Gestão de Estoque CPT</span>
+      </div>
     </nav>
-    <!-- Page Content -->
-    <div id="content">
-        <!-- Top Navbar Mobile -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light d-md-none mb-3 rounded shadow-sm">
-            <div class="container-fluid">
-                <button type="button" id="sidebarCollapse" class="btn btn-primary btn-sm">
-                    <i class="fas fa-align-left"></i>
-                </button>
-                <span class="fw-bold text-primary">Sistema de Gestão de Estoque CPT</span>
-            </div>
-        </nav>
-        <!-- SEÇÃO: INÍCIO -->
-        <div id="sec-inicio" class="app-section">
-            <div class="p-3 mb-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="m-0 text-primary fw-bold">Sistema de Gestão de Estoque CPT</h3>
-                    <small class="text-muted">Painel de operações e visão rápida do sistema</small>
-                </div>
-                
-                <div class="logo-container" onclick="document.getElementById('input-logo-file').click()" title="Clique para alterar a logo">
-                    <img id="img-logo-sistema" src="" alt="Logo CPT" class="logo-img-custom" style="display: none;">
-                    <div id="placeholder-logo-sistema" class="text-end text-muted cursor-pointer">
-                        <i class="fa-solid fa-warehouse fs-2 text-primary"></i>
-                        <small class="d-block text-primary" style="font-size: 0.65rem;"><i class="fa-solid fa-camera me-1"></i>Alterar Logo</small>
-                    </div>
-                    <span class="logo-overlay-icon"><i class="fa-solid fa-pen"></i></span>
-                </div>
-                <input type="file" id="input-logo-file" accept="image/*" class="d-none" onchange="alterarLogoSistema(this)">
-            </div>
-            <div class="row g-2 mb-3">
-                <div class="col-md-4">
-                    <div class="card kpi-card-compact">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">TOTAL DE MATERIAIS</small>
-                                <h4 class="m-0 fw-bold" id="kpi-total-materiais">0</h4>
-                            </div>
-                            <i class="fa-solid fa-boxes-stacked kpi-icon-compact text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card kpi-card-compact warning">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTOQUE CRÍTICO</small>
-                                <h4 class="m-0 text-danger fw-bold" id="kpi-estoque-critico">0</h4>
-                            </div>
-                            <i class="fa-solid fa-triangle-exclamation kpi-icon-compact text-danger"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card kpi-card-compact info">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">COMPRAS PENDENTES</small>
-                                <h4 class="m-0 text-warning fw-bold" id="kpi-compras-pendentes">0</h4>
-                            </div>
-                            <i class="fa-solid fa-clock kpi-icon-compact text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <h6 class="mb-2 text-muted fw-bold"><i class="fa-solid fa-bolt me-1 text-warning"></i>AÇÕES RÁPIDAS</h6>
-            <div class="row g-2 mb-3">
-                <div class="col-6 col-md-3">
-                    <div class="card quick-action-card-compact text-center" onclick="openMaterialModal()">
-                        <i class="fa-solid fa-box-archive text-secondary fs-4 mb-1"></i>
-                        <span class="d-block fw-semibold" style="font-size: 0.85rem;">Novo Material</span>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card quick-action-card-compact text-center" onclick="showSection('movimentacao')">
-                        <i class="fa-solid fa-right-left text-secondary fs-4 mb-1"></i>
-                        <span class="d-block fw-semibold" style="font-size: 0.85rem;">Entrada / Saída</span>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card quick-action-card-compact text-center" onclick="openCompraModal()">
-                        <i class="fa-solid fa-cart-plus text-secondary fs-4 mb-1"></i>
-                        <span class="d-block fw-semibold" style="font-size: 0.85rem;">Nova Compra</span>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card quick-action-card-compact text-center" onclick="showSection('backup')">
-                        <i class="fa-solid fa-file-export text-secondary fs-4 mb-1"></i>
-                        <span class="d-block fw-semibold" style="font-size: 0.85rem;">Fazer Backup</span>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header header-alerta-estoque py-2">
-                    <i class="fa-solid fa-bell me-2"></i>Alerta de Reposição
-                </div>
-                <div class="card-body p-0 table-responsive">
-                    <table class="table table-sm table-hover align-middle m-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Código</th>
-                                <th>Material</th>
-                                <th>Tipo</th>
-                                <th>Local</th>
-                                <th>Qtd. Atual</th>
-                                <th>Qtd. Mínima</th>
-                                <th>Unidade</th>
-                                <th>Status</th>
-                                <th>Pedido de Compra</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-alertas-inicio">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+
+    <!-- SEÇÃO: INÍCIO -->
+    <div id="sec-inicio" class="app-section">
+      <div class="p-3 mb-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="m-0 text-primary fw-bold">Sistema de Gestão de Estoque CPT</h3>
+          <small class="text-muted">Painel de operações e visão rápida do sistema</small>
         </div>
-        <!-- SEÇÃO: DASHBOARD -->
-        <div id="sec-dashboard" class="app-section d-none">
-            <h3 class="mb-3">Dashboard Gerencial</h3>
-            <div class="row g-3">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header d-flex flex-wrap justify-content-between align-items-center py-2 gap-2">
-                            <span><i class="fa-solid fa-chart-line text-primary me-2"></i>Evolução do Estoque ao Longo do Tempo</span>
-                            <div class="d-flex align-items-center gap-2">
-                                <label for="dash-select-material" class="form-label mb-0 small text-muted fw-bold">Material:</label>
-                                <select id="dash-select-material" class="form-select form-select-sm w-auto" onchange="renderDashboardCharts()">
-                                </select>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartEvolucaoEstoque" style="height: 420px; max-height: 480px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="logo-container" onclick="document.getElementById('input-logo-file').click()" title="Clique para alterar a logo">
+          <img id="img-logo-sistema" src="" alt="Logo CPT" class="logo-img-custom" style="display: none;">
+          <div id="placeholder-logo-sistema" class="text-end text-muted cursor-pointer">
+            <i class="fa-solid fa-warehouse fs-2 text-primary"></i>
+            <small class="d-block text-primary" style="font-size: 0.65rem;"><i class="fa-solid fa-camera me-1"></i>Alterar Logo</small>
+          </div>
+          <span class="logo-overlay-icon"><i class="fa-solid fa-pen"></i></span>
         </div>
-        <!-- SEÇÃO: MATERIAIS -->
-        <div id="sec-materiais" class="app-section d-none">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Cadastro de Materiais</h3>
-                <button class="btn btn-primary btn-sm" onclick="openMaterialModal()"><i class="fa-solid fa-plus me-1"></i> Novo Material</button>
+        <input type="file" id="input-logo-file" accept="image/*" class="d-none" onchange="alterarLogoSistema(this)">
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <div class="card kpi-card-compact">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">TOTAL DE MATERIAIS</small>
+                <h4 class="m-0 fw-bold" id="kpi-total-materiais">0</h4>
+              </div>
+              <i class="fa-solid fa-boxes-stacked kpi-icon-compact text-primary"></i>
             </div>
-            <div class="card mb-3 p-2">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card kpi-card-compact warning">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">ESTOQUE CRÍTICO</small>
+                <h4 class="m-0 text-danger fw-bold" id="kpi-estoque-critico">0</h4>
+              </div>
+              <i class="fa-solid fa-triangle-exclamation kpi-icon-compact text-danger"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card kpi-card-compact info">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted d-block fw-bold" style="font-size: 0.75rem;">COMPRAS PENDENTES</small>
+                <h4 class="m-0 text-warning fw-bold" id="kpi-compras-pendentes">0</h4>
+              </div>
+              <i class="fa-solid fa-clock kpi-icon-compact text-warning"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="mb-2 text-muted fw-bold"><i class="fa-solid fa-bolt me-1 text-warning"></i>AÇÕES RÁPIDAS</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card quick-action-card-compact text-center" onclick="openMaterialModal()">
+            <i class="fa-solid fa-box-archive text-secondary fs-4 mb-1"></i>
+            <span class="d-block fw-semibold" style="font-size: 0.85rem;">Novo Material</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card quick-action-card-compact text-center" onclick="showSection('movimentacao')">
+            <i class="fa-solid fa-right-left text-secondary fs-4 mb-1"></i>
+            <span class="d-block fw-semibold" style="font-size: 0.85rem;">Entrada / Saída</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card quick-action-card-compact text-center" onclick="openCompraModal()">
+            <i class="fa-solid fa-cart-plus text-secondary fs-4 mb-1"></i>
+            <span class="d-block fw-semibold" style="font-size: 0.85rem;">Nova Compra</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card quick-action-card-compact text-center" onclick="showSection('backup')">
+            <i class="fa-solid fa-file-export text-secondary fs-4 mb-1"></i>
+            <span class="d-block fw-semibold" style="font-size: 0.85rem;">Fazer Backup</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerta de Reposição (Sem Local e Sem Tipo) -->
+      <div class="card">
+        <div class="card-header header-alerta-estoque py-2">
+          <i class="fa-solid fa-bell me-2"></i>Alerta de Reposição
+        </div>
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>Código</th>
+                <th>Material</th>
+                <th>Qtd. Atual</th>
+                <th>Qtd. Mínima</th>
+                <th>Unidade</th>
+                <th>Status</th>
+                <th>Pedido de Compra</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-alertas-inicio">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: DASHBOARD REDESENHADO E PROFISSIONAL -->
+    <div id="sec-dashboard" class="app-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3 class="m-0 fw-bold text-dark">Dashboard Gerencial</h3>
+          <small class="text-muted">Análise de estoque, categorias e movimentações</small>
+        </div>
+        <span class="badge bg-light text-secondary border fs-6"><i class="fa-solid fa-chart-pie me-1"></i>Tempo Real</span>
+      </div>
+
+      <!-- KPIs Rápidos do Dashboard -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">TOTAL DE ITENS</small>
+            <h4 class="m-0 fw-bold text-dark" id="dash-kpi-total-itens">0</h4>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact success">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">UNIDADES EM ESTOQUE</small>
+            <h4 class="m-0 fw-bold text-success" id="dash-kpi-total-unidades">0</h4>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact warning">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">ITENS EM ALERTA</small>
+            <h4 class="m-0 fw-bold text-danger" id="dash-kpi-alertas">0</h4>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact info">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">MOVIMENTAÇÕES</small>
+            <h4 class="m-0 fw-bold text-warning" id="dash-kpi-total-movs">0</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico Principal: Evolução por Barras Executivas com Linha Guia -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center py-2 gap-2 bg-white">
+              <span class="fw-bold text-primary"><i class="fa-solid fa-chart-column me-2"></i>Evolução do Saldo do Material</span>
+              <div class="d-flex align-items-center gap-2">
+                <label for="dash-select-material" class="form-label mb-0 small text-muted fw-bold">Selecionar Material:</label>
+                <select id="dash-select-material" class="form-select form-select-sm w-auto" onchange="renderDashboardCharts()">
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="chartEvolucaoEstoque" style="height: 320px; max-height: 350px;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos Secundários: Categorias & Entradas x Saídas -->
+      <div class="row g-3">
+        <div class="col-md-5">
+          <div class="card shadow-sm h-100">
+            <div class="card-header py-2 bg-white fw-bold"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Distribuição por Categoria</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+              <div style="width: 100%; max-width: 260px;">
+                <canvas id="chartCategorias" style="height: 220px;"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-7">
+          <div class="card shadow-sm h-100">
+            <div class="card-header py-2 bg-white fw-bold"><i class="fa-solid fa-arrow-right-arrow-left me-2 text-primary"></i>Balanço de Entradas x Saídas</div>
+            <div class="card-body">
+              <canvas id="chartEntradasSaidas" style="height: 220px;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: MATERIAIS -->
+    <div id="sec-materiais" class="app-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Cadastro de Materiais</h3>
+        <button class="btn btn-primary btn-sm" onclick="openMaterialModal()"><i class="fa-solid fa-plus me-1"></i> Novo Material</button>
+      </div>
+
+      <div class="card mb-3 p-2">
+        <div class="row g-2">
+          <div class="col-md-7">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" id="filtro-nome-material" class="form-control" placeholder="Buscar material por nome ou código..." oninput="filtrarMateriais()">
+            </div>
+          </div>
+          <div class="col-md-5">
+            <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()">
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>Foto</th>
+                <th class="sortable-header" onclick="ordenarMateriais('codigo')">Código <i class="fa-solid fa-sort ms-1 id-sort-codigo"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('nome')">Nome <i class="fa-solid fa-sort ms-1 id-sort-nome"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('tipoClassificacao')">Tipo <i class="fa-solid fa-sort ms-1 id-sort-tipoClassificacao"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('local')">Local de Armazenamento <i class="fa-solid fa-sort ms-1 id-sort-local"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('qtd')">Qtd. Atual <i class="fa-solid fa-sort ms-1 id-sort-qtd"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('min')">Qtd. Mínima <i class="fa-solid fa-sort ms-1 id-sort-min"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('unidade')">Un. Medida <i class="fa-solid fa-sort ms-1 id-sort-unidade"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('ca')">CA <i class="fa-solid fa-sort ms-1 id-sort-ca"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('validade')">Validade <i class="fa-solid fa-sort ms-1 id-sort-validade"></i></th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-materiais">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: COMPRAS -->
+    <div id="sec-compras" class="app-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Gestão de Compras</h3>
+        <button class="btn btn-primary btn-sm" onclick="openCompraModal()"><i class="fa-solid fa-plus me-1"></i> Nova Ordem de Compra</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Material</th>
+                <th>Qtd.</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-compras">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: MOVIMENTAÇÃO -->
+    <div id="sec-movimentacao" class="app-section d-none">
+      <h3 class="mb-3">Controle de Estoque (Entradas e Saídas)</h3>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header py-2"><i class="fa-solid fa-arrow-right-to-city me-2"></i>Registrar Movimento</div>
+            <div class="card-body">
+              <form id="form-movimentacao" onsubmit="event.preventDefault();">
+                <div class="mb-3">
+                  <label class="form-label form-label-sm">Material</label>
+                  <input class="form-control form-control-sm" list="list-materiais-movimentacao" id="mov-material-input" placeholder="Digite para buscar pelo nome..." required>
+                  <datalist id="list-materiais-movimentacao">
+                  </datalist>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label form-label-sm">Quantidade</label>
+                  <input type="number" min="1" class="form-control form-control-sm" id="mov-quantidade" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label form-label-sm">Observação</label>
+                  <input type="text" class="form-control form-control-sm" id="mov-obs" placeholder="Ex: Uso na manutenção, NF 1234...">
+                </div>
                 <div class="row g-2">
-                    <div class="col-md-7">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                            <input type="text" id="filtro-nome-material" class="form-control" placeholder="Buscar material por nome ou código..." oninput="filtrarMateriais()">
-                        </div>
-                    </div>
-                    <div class="col-md-5">
-                        <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()">
-                        </select>
-                    </div>
+                  <div class="col-6">
+                    <button type="button" class="btn btn-success btn-sm w-100" onclick="salvarMovimentacaoComTipo('ENTRADA')">
+                      <i class="fa-solid fa-plus-circle me-1"></i> Entrada
+                    </button>
+                  </div>
+                  <div class="col-6">
+                    <button type="button" class="btn btn-danger btn-sm w-100" onclick="salvarMovimentacaoComTipo('SAIDA')">
+                      <i class="fa-solid fa-minus-circle me-1"></i> Saída
+                    </button>
+                  </div>
                 </div>
+              </form>
             </div>
-            <div class="card">
-                <div class="card-body p-0 table-responsive">
-                    <table class="table table-sm table-striped align-middle m-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Foto</th>
-                                <th class="sortable-header" onclick="ordenarMateriais('codigo')">Código <i class="fa-solid fa-sort ms-1 id-sort-codigo"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('nome')">Nome <i class="fa-solid fa-sort ms-1 id-sort-nome"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('tipoClassificacao')">Tipo <i class="fa-solid fa-sort ms-1 id-sort-tipoClassificacao"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('local')">Local de Armazenamento <i class="fa-solid fa-sort ms-1 id-sort-local"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('qtd')">Qtd. Atual <i class="fa-solid fa-sort ms-1 id-sort-qtd"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('min')">Qtd. Mínima <i class="fa-solid fa-sort ms-1 id-sort-min"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('unidade')">Un. Medida <i class="fa-solid fa-sort ms-1 id-sort-unidade"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('ca')">CA <i class="fa-solid fa-sort ms-1 id-sort-ca"></i></th>
-                                <th class="sortable-header" onclick="ordenarMateriais('validade')">Validade <i class="fa-solid fa-sort ms-1 id-sort-validade"></i></th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-materiais">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+          </div>
         </div>
-        <!-- SEÇÃO: COMPRAS -->
-        <div id="sec-compras" class="app-section d-none">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>Gestão de Compras</h3>
-                <button class="btn btn-primary btn-sm" onclick="openCompraModal()"><i class="fa-solid fa-plus me-1"></i> Nova Ordem de Compra</button>
+
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span><i class="fa-solid fa-list-check me-2"></i>Histórico de Movimentações</span>
+              <!-- Caixa de Pesquisa no Histórico -->
+              <div class="input-group input-group-sm w-auto">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" id="filtro-historico-mov" class="form-control" placeholder="Buscar no histórico..." oninput="renderMovimentacao()">
+              </div>
             </div>
-            <div class="card">
-                <div class="card-body p-0 table-responsive">
-                    <table class="table table-sm table-striped align-middle m-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Data</th>
-                                <th>Material</th>
-                                <th>Qtd.</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-compras">
-                        </tbody>
-                    </table>
-                </div>
+            <div class="card-body p-0 table-responsive">
+              <table class="table table-sm table-hover align-middle m-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data/Hora</th>
+                    <th>Tipo</th>
+                    <th>Material</th>
+                    <th>Qtd</th>
+                    <th>Obs.</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-movimentacoes">
+                </tbody>
+              </table>
             </div>
+          </div>
         </div>
-        <!-- SEÇÃO: MOVIMENTAÇÃO -->
-        <div id="sec-movimentacao" class="app-section d-none">
-            <h3 class="mb-3">Controle de Estoque (Entradas e Saídas)</h3>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: BACKUP E DADOS -->
+    <div id="sec-backup" class="app-section d-none">
+      <h3 class="mb-3">Backup e Gestão do Banco de Dados</h3>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="card p-3 h-100">
+            <h5><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar para Excel</h5>
+            <p class="text-muted small">Exporte a planilha completa do seu estoque atual (.xlsx) pronta para impressão ou relatórios.</p>
+            <button class="btn btn-success btn-sm mt-auto" onclick="exportarExcelEstoque()"><i class="fa-solid fa-file-excel me-1"></i> Baixar Planilha Excel</button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-3 h-100">
+            <h5><i class="fa-solid fa-download text-primary me-2"></i> Exportar Backup JSON</h5>
+            <p class="text-muted small">Faça o download de todos os seus dados em formato JSON seguro para backup integral do sistema.</p>
+            <button class="btn btn-primary btn-sm mt-auto" onclick="exportarBackup()"><i class="fa-solid fa-file-export me-1"></i> Baixar Arquivo JSON</button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-3 h-100">
+            <h5><i class="fa-solid fa-upload text-warning me-2"></i> Importar Backup</h5>
+            <p class="text-muted small">Restaure as informações do sistema a partir de um arquivo JSON anteriormente baixado.</p>
+            <input type="file" id="file-import" class="form-control form-control-sm mb-2" accept=".json">
+            <button class="btn btn-warning btn-sm mt-auto" onclick="importarBackup()"><i class="fa-solid fa-file-import me-1"></i> Restaurar Dados</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAIS -->
+
+  <!-- Modal Material -->
+  <div class="modal fade" id="modalMaterial" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalMaterialTitle">Cadastrar Material</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="form-material" onsubmit="salvarMaterial(event)">
+          <div class="modal-body">
+            <input type="hidden" id="mat-id-original">
+            <input type="hidden" id="mat-foto-base64">
             
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header py-2"><i class="fa-solid fa-arrow-right-to-city me-2"></i>Registrar Movimento</div>
-                        <div class="card-body">
-                            <form id="form-movimentacao" onsubmit="event.preventDefault();">
-                                <div class="mb-3">
-                                    <label class="form-label form-label-sm">Material</label>
-                                    <input class="form-control form-control-sm" list="list-materiais-movimentacao" id="mov-material-input" placeholder="Digite para buscar pelo nome..." required>
-                                    <datalist id="list-materiais-movimentacao">
-                                    </datalist>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label form-label-sm">Quantidade</label>
-                                    <input type="number" min="1" class="form-control form-control-sm" id="mov-quantidade" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label form-label-sm">Observação</label>
-                                    <input type="text" class="form-control form-control-sm" id="mov-obs" placeholder="Ex: Uso na manutenção, NF 1234...">
-                                </div>
-                                
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <button type="button" class="btn btn-success btn-sm w-100" onclick="salvarMovimentacaoComTipo('ENTRADA')">
-                                            <i class="fa-solid fa-plus-circle me-1"></i> Entrada
-                                        </button>
-                                    </div>
-                                    <div class="col-6">
-                                        <button type="button" class="btn btn-danger btn-sm w-100" onclick="salvarMovimentacaoComTipo('SAIDA')">
-                                            <i class="fa-solid fa-minus-circle me-1"></i> Saída
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header py-2"><i class="fa-solid fa-list-check me-2"></i>Histórico de Movimentações</div>
-                        <div class="card-body p-0 table-responsive">
-                            <table class="table table-sm table-hover align-middle m-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Data/Hora</th>
-                                        <th>Tipo</th>
-                                        <th>Material</th>
-                                        <th>Qtd</th>
-                                        <th>Obs.</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbody-movimentacoes">
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Código do Material *</label>
+                <input type="text" class="form-control" id="mat-codigo" placeholder="Ex: 00045" oninput="buscarSugestaoCodigo(this.value)" required>
+                <div id="sugestao-codigo-help" class="form-text text-primary font-monospace fw-bold" style="min-height: 18px;"></div>
+              </div>
+              <div class="col-md-5 mb-3">
+                <label class="form-label">Nome do Material *</label>
+                <!-- Alerta dinâmico de nome duplicado ao digitar -->
+                <input type="text" class="form-control" id="mat-nome" oninput="verificarNomeDuplicado(this.value)" required>
+                <div id="alerta-nome-duplicado" class="form-text text-danger fw-bold" style="min-height: 18px;"></div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Tipo do Material</label>
+                <select class="form-select" id="mat-tipo-classificacao" onchange="toggleCamposEpi()" required>
+                  <option value="DIVERSOS">Diversos</option>
+                  <option value="EPI">EPI (Proteção)</option>
+                </select>
+              </div>
             </div>
-        </div>
-        <!-- SEÇÃO: BACKUP E DADOS -->
-        <div id="sec-backup" class="app-section d-none">
-            <h3 class="mb-3">Backup e Gestão do Banco de Dados</h3>
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="card p-3 h-100">
-                        <h5><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar para Excel</h5>
-                        <p class="text-muted small">Exporte a planilha completa do seu estoque atual (.xlsx) pronta para impressão ou relatórios.</p>
-                        <button class="btn btn-success btn-sm mt-auto" onclick="exportarExcelEstoque()"><i class="fa-solid fa-file-excel me-1"></i> Baixar Planilha Excel</button>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card p-3 h-100">
-                        <h5><i class="fa-solid fa-download text-primary me-2"></i> Exportar Backup JSON</h5>
-                        <p class="text-muted small">Faça o download de todos os seus dados em formato JSON seguro para backup integral do sistema.</p>
-                        <button class="btn btn-primary btn-sm mt-auto" onclick="exportarBackup()"><i class="fa-solid fa-file-export me-1"></i> Baixar Arquivo JSON</button>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card p-3 h-100">
-                        <h5><i class="fa-solid fa-upload text-warning me-2"></i> Importar Backup</h5>
-                        <p class="text-muted small">Restaure as informações do sistema a partir de um arquivo JSON anteriormente baixado.</p>
-                        <input type="file" id="file-import" class="form-control form-control-sm mb-2" accept=".json">
-                        <button class="btn btn-warning btn-sm mt-auto" onclick="importarBackup()"><i class="fa-solid fa-file-import me-1"></i> Restaurar Dados</button>
-                    </div>
-                </div>
+
+            <div class="row" id="container-campos-epi">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">CA</label>
+                <input type="text" class="form-control" id="mat-ca" placeholder="Ex: 12345">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Validade</label>
+                <input type="date" class="form-control" id="mat-validade">
+              </div>
             </div>
-        </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Local de Armazenamento</label>
+                <input type="text" class="form-control" id="mat-local" placeholder="Ex: Corredor A - Prateleira 3">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Unidade de Medida</label>
+                <select class="form-select" id="mat-unidade" required>
+                  <option value="UN">Unidade (UN)</option>
+                  <option value="KG">Quilograma (KG)</option> <option value="M">Metro (M)</option>
+                  <option value="M2">Metro Quadrado (M²)</option>
+                  <option value="M3">Metro Cúbico (M³)</option>
+                  <option value="L">Litro (L)</option>
+                  <option value="CX">Caixa (CX)</option>
+                  <option value="PCT">Pacote (PCT)</option>
+                  <option value="PAR">Par (PAR)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estoque Atual</label>
+                <input type="number" class="form-control" id="mat-qtd" required min="0">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estoque Mínimo</label>
+                <input type="number" class="form-control" id="mat-min" required min="0">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Foto do Material</label>
+              <input type="file" class="form-control" id="mat-foto-input" accept="image/*" onchange="previewImageInput(this)">
+              <div class="mt-2 text-center" id="modal-img-preview-container" style="display: none;">
+                <img id="modal-img-preview" src="" alt="Pré-visualização" class="img-thumbnail" style="max-height: 120px;">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
     </div>
-    <!-- MODAIS -->
-    <!-- Modal Material -->
-    <div class="modal fade" id="modalMaterial" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalMaterialTitle">Cadastrar Material</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="form-material" onsubmit="salvarMaterial(event)">
-                    <div class="modal-body">
-                        <input type="hidden" id="mat-id-original">
-                        <input type="hidden" id="mat-foto-base64">
-                        
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Código do Material *</label>
-                                <input type="text" class="form-control" id="mat-codigo" placeholder="Ex: 00045" oninput="buscarSugestaoCodigo(this.value)" required>
-                                <div id="sugestao-codigo-help" class="form-text text-primary font-monospace fw-bold" style="min-height: 20px;"></div>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label">Nome do Material *</label>
-                                <input type="text" class="form-control" id="mat-nome" required>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label">Tipo do Material</label>
-                                <select class="form-select" id="mat-tipo-classificacao" onchange="toggleCamposEpi()" required>
-                                    <option value="DIVERSOS">Diversos</option>
-                                    <option value="EPI">EPI (Proteção)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row" id="container-campos-epi">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">CA</label>
-                                <input type="text" class="form-control" id="mat-ca" placeholder="Ex: 12345">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Validade</label>
-                                <input type="date" class="form-control" id="mat-validade">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Local de Armazenamento</label>
-                                <input type="text" class="form-control" id="mat-local" placeholder="Ex: Corredor A - Prateleira 3">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Unidade de Medida</label>
-                                <select class="form-select" id="mat-unidade" required>
-                                    <option value="UN">Unidade (UN)</option>
-                                    <option value="KG">Quilograma (KG)</option>
-                                    <option value="M">Metro (M)</option>
-                                    <option value="M2">Metro Quadrado (M²)</option>
-                                    <option value="M3">Metro Cúbico (M³)</option>
-                                    <option value="L">Litro (L)</option>
-                                    <option value="CX">Caixa (CX)</option>
-                                    <option value="PCT">Pacote (PCT)</option>
-                                    <option value="PAR">Par (PAR)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Estoque Atual</label>
-                                <input type="number" class="form-control" id="mat-qtd" required min="0">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Estoque Mínimo</label>
-                                <input type="number" class="form-control" id="mat-min" required min="0">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Foto do Material</label>
-                            <input type="file" class="form-control" id="mat-foto-input" accept="image/*" onchange="previewImageInput(this)">
-                            <div class="mt-2 text-center" id="modal-img-preview-container" style="display: none;">
-                                <img id="modal-img-preview" src="" alt="Pré-visualização" class="img-thumbnail" style="max-height: 120px;">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                    </div>
-                </form>
-            </div>
+  </div>
+
+  <!-- Modal Zoom Foto -->
+  <div class="modal fade" id="modalZoomFoto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalZoomTitle">Visualização da Foto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-    </div>
-    <!-- Modal Zoom Foto -->
-    <div class="modal fade" id="modalZoomFoto" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalZoomTitle">Visualização da Foto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center p-3">
-                    <img id="imgZoomModal" src="" alt="Foto Ampliada" class="img-fluid rounded shadow">
-                </div>
-            </div>
+        <div class="modal-body text-center p-3">
+          <img id="imgZoomModal" src="" alt="Foto Ampliada" class="img-fluid rounded shadow">
         </div>
+      </div>
     </div>
-    <!-- Modal Compra -->
-    <div class="modal fade" id="modalCompra" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nova Ordem de Compra</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="form-compra" onsubmit="salvarCompra(event)">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Material</label>
-                            <select class="form-select" id="comp-material-id" required>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Quantidade</label>
-                            <input type="number" min="1" class="form-control" id="comp-quantidade" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Gerar Ordem de Compra</button>
-                    </div>
-                </form>
-            </div>
+  </div>
+
+  <!-- Modal Compra -->
+  <div class="modal fade" id="modalCompra" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova Ordem de Compra</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
+        <form id="form-compra" onsubmit="salvarCompra(event)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Material</label>
+              <select class="form-select" id="comp-material-id" required>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Quantidade</label>
+              <input type="number" min="1" class="form-control" id="comp-quantidade" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Gerar Ordem de Compra</button>
+          </div>
+        </form>
+      </div>
     </div>
-    <!-- JS Bootstrap e Scripts da Aplicação -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let db = {
-            config: { logo: "", sidebarIcon: "" },
-            materiais: [],
-            compras: [],
-            movimentacoes: []
+  </div>
+
+  <!-- JS Bootstrap e Scripts da Aplicação -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let db = {
+      config: { logo: "", sidebarIcon: "" },
+      materiais: [],
+      compras: [],
+      movimentacoes: []
+    };
+
+    let chartEvolucaoInstance = null;
+    let chartCategoriasInstance = null;
+    let chartEntradasSaidasInstance = null;
+
+    let idb = null;
+    const DB_NAME = 'gestao_estoque_cpt_idb';
+    const DB_VERSION = 1;
+
+    let ordenacaoAtual = { coluna: 'nome', asc: true };
+
+    // INDEXEDDB
+    function initDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+          const dbRef = e.target.result;
+          if (!dbRef.objectStoreNames.contains('config')) dbRef.createObjectStore('config', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('materiais')) dbRef.createObjectStore('materiais', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('compras')) dbRef.createObjectStore('compras', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('movimentacoes')) dbRef.createObjectStore('movimentacoes', { keyPath: 'id' });
         };
-        let chartConsumoInstance = null;
-        let idb = null;
-        const DB_NAME = 'gestao_estoque_cpt_idb';
-        const DB_VERSION = 1;
-        let ordenacaoAtual = { coluna: 'nome', asc: true };
-        // INDEXEDDB
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = (e) => {
-                    const dbRef = e.target.result;
-                    if (!dbRef.objectStoreNames.contains('config')) dbRef.createObjectStore('config', { keyPath: 'id' });
-                    if (!dbRef.objectStoreNames.contains('materiais')) dbRef.createObjectStore('materiais', { keyPath: 'id' });
-                    if (!dbRef.objectStoreNames.contains('compras')) dbRef.createObjectStore('compras', { keyPath: 'id' });
-                    if (!dbRef.objectStoreNames.contains('movimentacoes')) dbRef.createObjectStore('movimentacoes', { keyPath: 'id' });
-                };
-                request.onsuccess = (e) => {
-                    idb = e.target.result;
-                    resolve(idb);
-                };
-                request.onerror = (e) => {
-                    console.error("Erro ao abrir IndexedDB", e);
-                    reject(e);
-                };
-            });
+        request.onsuccess = (e) => {
+          idb = e.target.result;
+          resolve(idb);
+        };
+        request.onerror = (e) => {
+          console.error("Erro ao abrir IndexedDB", e);
+          reject(e);
+        };
+      });
+    }
+
+    function getAllFromStore(storeName) {
+      return new Promise((resolve) => {
+        const tx = idb.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    }
+
+    function saveToStore(storeName, item) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put(item);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    function deleteFromStore(storeName, id) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    function clearStore(storeName) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    async function carregarDados() {
+      await initDB();
+      const legacyData = localStorage.getItem('gestao_estoque_cpt_db');
+      if (legacyData) {
+        try {
+          const parsed = JSON.parse(legacyData);
+          if (parsed.config) await saveToStore('config', { id: 'main', ...parsed.config });
+          if (parsed.materiais) {
+            for (const item of parsed.materiais) await saveToStore('materiais', item);
+          }
+          if (parsed.compras) {
+            for (const item of parsed.compras) await saveToStore('compras', item);
+          }
+          if (parsed.movimentacoes) {
+            for (const item of parsed.movimentacoes) await saveToStore('movimentacoes', item);
+          }
+          localStorage.removeItem('gestao_estoque_cpt_db');
+        } catch (e) {
+          console.error("Falha ao migrar dados legados", e);
         }
-        function getAllFromStore(storeName) {
-            return new Promise((resolve) => {
-                const tx = idb.transaction(storeName, 'readonly');
-                const store = tx.objectStore(storeName);
-                const req = store.getAll();
-                req.onsuccess = () => resolve(req.result || []);
-                req.onerror = () => resolve([]);
-            });
+      }
+
+      const configArr = await getAllFromStore('config');
+      const mainConfig = configArr.find(c => c.id === 'main');
+      db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebarIcon || "" } : { logo: "", sidebarIcon: "" };
+      db.materiais = await getAllFromStore('materiais');
+      db.compras = await getAllFromStore('compras');
+      db.movimentacoes = await getAllFromStore('movimentacoes');
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await carregarDados();
+      setupResponsiveSidebar();
+      renderLogoSistema();
+      renderInicio();
+    });
+
+    function setupResponsiveSidebar() {
+      document.getElementById('sidebarCollapse').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('content').classList.toggle('active');
+      });
+    }
+
+    function baixarApp(plataforma) {
+      alert(`Recurso do App Mobile (${plataforma}): Em breve disponível para download direto na loja oficial!`);
+    }
+
+    async function alterarLogoSistema(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          if(!db.config) db.config = {};
+          db.config.logo = e.target.result;
+          await saveToStore('config', { id: 'main', logo: db.config.logo, sidebarIcon: db.config.sidebarIcon || "" });
+          renderLogoSistema();
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function renderLogoSistema() {
+      const imgElement = document.getElementById('img-logo-sistema');
+      const placeholder = document.getElementById('placeholder-logo-sistema');
+      if (db.config && db.config.logo) {
+        imgElement.src = db.config.logo;
+        imgElement.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        imgElement.style.display = 'none';
+        placeholder.style.display = 'block';
+      }
+    }
+
+    function toggleCamposEpi() {
+      const tipo = document.getElementById('mat-tipo-classificacao').value;
+      const caInput = document.getElementById('mat-ca');
+      const valInput = document.getElementById('mat-validade');
+      if (tipo === 'EPI') {
+        caInput.disabled = false;
+        valInput.disabled = false;
+        caInput.value = (caInput.value === 'N/A') ? '' : caInput.value;
+        valInput.value = (valInput.value === 'N/A') ? '' : valInput.value;
+      } else {
+        caInput.value = 'N/A';
+        valInput.value = 'N/A';
+        caInput.disabled = true;
+        valInput.disabled = true;
+      }
+    }
+
+    function showSection(sectionId) {
+      document.querySelectorAll('.app-section').forEach(sec => sec.classList.add('d-none'));
+      document.querySelectorAll('#sidebar ul li').forEach(li => li.classList.remove('active'));
+      document.getElementById(`sec-${sectionId}`).classList.remove('d-none');
+      
+      const links = document.querySelectorAll('#sidebar ul li a');
+      links.forEach(a => {
+        if(a.getAttribute('onclick').includes(sectionId)) {
+          a.parentElement.classList.add('active');
         }
-        function saveToStore(storeName, item) {
-            return new Promise((resolve, reject) => {
-                const tx = idb.transaction(storeName, 'readwrite');
-                const store = tx.objectStore(storeName);
-                const req = store.put(item);
-                req.onsuccess = () => resolve();
-                req.onerror = (e) => reject(e);
-            });
-        }
-        function deleteFromStore(storeName, id) {
-            return new Promise((resolve, reject) => {
-                const tx = idb.transaction(storeName, 'readwrite');
-                const store = tx.objectStore(storeName);
-                const req = store.delete(id);
-                req.onsuccess = () => resolve();
-                req.onerror = (e) => reject(e);
-            });
-        }
-        function clearStore(storeName) {
-            return new Promise((resolve, reject) => {
-                const tx = idb.transaction(storeName, 'readwrite');
-                const store = tx.objectStore(storeName);
-                const req = store.clear();
-                req.onsuccess = () => resolve();
-                req.onerror = (e) => reject(e);
-            });
-        }
-        async function carregarDados() {
-            await initDB();
-            const legacyData = localStorage.getItem('gestao_estoque_cpt_db');
-            if (legacyData) {
-                try {
-                    const parsed = JSON.parse(legacyData);
-                    if (parsed.config) await saveToStore('config', { id: 'main', ...parsed.config });
-                    if (parsed.materiais) {
-                        for (const item of parsed.materiais) await saveToStore('materiais', item);
-                    }
-                    if (parsed.compras) {
-                        for (const item of parsed.compras) await saveToStore('compras', item);
-                    }
-                    if (parsed.movimentacoes) {
-                        for (const item of parsed.movimentacoes) await saveToStore('movimentacoes', item);
-                    }
-                    localStorage.removeItem('gestao_estoque_cpt_db');
-                } catch (e) {
-                    console.error("Falha ao migrar dados legados", e);
-                }
-            }
-            const configArr = await getAllFromStore('config');
-            const mainConfig = configArr.find(c => c.id === 'main');
-            db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebarIcon || "" } : { logo: "", sidebarIcon: "" };
-            
-            db.materiais = await getAllFromStore('materiais');
-            db.compras = await getAllFromStore('compras');
-            db.movimentacoes = await getAllFromStore('movimentacoes');
-        }
-        document.addEventListener("DOMContentLoaded", async () => {
-            await carregarDados();
-            setupResponsiveSidebar();
-            renderLogoSistema();
-            renderInicio();
+      });
+
+      if(sectionId === 'inicio') renderInicio();
+      if(sectionId === 'dashboard') {
+        carregarSelectDashboard();
+        renderDashboardCharts();
+      }
+      if(sectionId === 'materiais') {
+        carregarFiltroLocais();
+        renderMateriais();
+      }
+      if(sectionId === 'compras') renderCompras();
+      if(sectionId === 'movimentacao') renderMovimentacao();
+    }
+
+    // INÍCIO - Tabela sem Local e Tipo
+    function renderInicio() {
+      const totalMateriais = db.materiais.length;
+      const estoqueCritico = db.materiais.filter(m => Number(m.qtd) < Number(m.min));
+      const comprasPendentes = db.compras.filter(c => c.status === 'Pendente').length;
+
+      document.getElementById('kpi-total-materiais').innerText = totalMateriais;
+      document.getElementById('kpi-estoque-critico').innerText = estoqueCritico.length;
+      document.getElementById('kpi-compras-pendentes').innerText = comprasPendentes;
+
+      const tbody = document.getElementById('tbody-alertas-inicio');
+      tbody.innerHTML = '';
+
+      if (estoqueCritico.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-success py-2"><i class="fa-solid fa-circle-check me-1"></i> Todos os estoques estão com nível normal!</td></tr>`;
+      } else {
+        estoqueCritico.forEach(m => {
+          const comprasDoMaterial = db.compras.filter(c => (c.materialId === m.id || c.materialId === m.codigo) && c.status === 'Pendente');
+          let compraBadge = `<span class="badge bg-secondary">Não</span>`;
+          if (comprasDoMaterial.length > 0) {
+            const totalQtdCompra = comprasDoMaterial.reduce((acc, curr) => acc + Number(curr.qtd), 0);
+            compraBadge = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Em Andamento (${totalQtdCompra} ${m.unidade || 'UN'})</span>`;
+          }
+
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>#${m.codigo || m.id}</strong></td>
+              <td><strong>${m.nome}</strong></td>
+              <td class="text-danger fw-bold">${m.qtd}</td>
+              <td>${m.min}</td>
+              <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
+              <td><span class="badge badge-low-stock">Abaixo do Mínimo</span></td>
+              <td>${compraBadge}</td>
+            </tr>
+          `;
         });
-        function setupResponsiveSidebar() {
-            document.getElementById('sidebarCollapse').addEventListener('click', () => {
-                document.getElementById('sidebar').classList.toggle('active');
-                document.getElementById('content').classList.toggle('active');
-            });
-        }
-        async function alterarLogoSistema(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    if(!db.config) db.config = {};
-                    db.config.logo = e.target.result;
-                    await saveToStore('config', { id: 'main', logo: db.config.logo, sidebarIcon: db.config.sidebarIcon || "" });
-                    renderLogoSistema();
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-        function renderLogoSistema() {
-            const imgElement = document.getElementById('img-logo-sistema');
-            const placeholder = document.getElementById('placeholder-logo-sistema');
-            if (db.config && db.config.logo) {
-                imgElement.src = db.config.logo;
-                imgElement.style.display = 'block';
-                placeholder.style.display = 'none';
-            } else {
-                imgElement.style.display = 'none';
-                placeholder.style.display = 'block';
-            }
-        }
-        function toggleCamposEpi() {
-            const tipo = document.getElementById('mat-tipo-classificacao').value;
-            const caInput = document.getElementById('mat-ca');
-            const valInput = document.getElementById('mat-validade');
-            if (tipo === 'EPI') {
-                caInput.disabled = false;
-                valInput.disabled = false;
-                caInput.value = (caInput.value === 'N/A') ? '' : caInput.value;
-                valInput.value = (valInput.value === 'N/A') ? '' : valInput.value;
-            } else {
-                caInput.value = 'N/A';
-                valInput.value = 'N/A';
-                caInput.disabled = true;
-                valInput.disabled = true;
-            }
-        }
-        function showSection(sectionId) {
-            document.querySelectorAll('.app-section').forEach(sec => sec.classList.add('d-none'));
-            document.querySelectorAll('#sidebar ul li').forEach(li => li.classList.remove('active'));
-            document.getElementById(`sec-${sectionId}`).classList.remove('d-none');
-            
-            const links = document.querySelectorAll('#sidebar ul li a');
-            links.forEach(a => {
-                if(a.getAttribute('onclick').includes(sectionId)) {
-                    a.parentElement.classList.add('active');
-                }
-            });
-            if(sectionId === 'inicio') renderInicio();
-            if(sectionId === 'dashboard') {
-                carregarSelectDashboard();
-                renderDashboardCharts();
-            }
-            if(sectionId === 'materiais') {
-                carregarFiltroLocais();
-                renderMateriais();
-            }
-            if(sectionId === 'compras') renderCompras();
-            if(sectionId === 'movimentacao') renderMovimentacao();
-        }
-        function renderInicio() {
-            const totalMateriais = db.materiais.length;
-            const estoqueCritico = db.materiais.filter(m => Number(m.qtd) < Number(m.min));
-            const comprasPendentes = db.compras.filter(c => c.status === 'Pendente').length;
-            document.getElementById('kpi-total-materiais').innerText = totalMateriais;
-            document.getElementById('kpi-estoque-critico').innerText = estoqueCritico.length;
-            document.getElementById('kpi-compras-pendentes').innerText = comprasPendentes;
-            const tbody = document.getElementById('tbody-alertas-inicio');
-            tbody.innerHTML = '';
-            if (estoqueCritico.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-success py-2"><i class="fa-solid fa-circle-check me-1"></i> Todos os estoques estão com nível normal!</td></tr>`;
-            } else {
-                estoqueCritico.forEach(m => {
-                    const tipoBadge = m.tipoClassificacao === 'EPI' ? 
-                        `<span class="badge badge-epi">EPI</span>` : 
-                        `<span class="badge bg-light text-dark border">Diversos</span>`;
-                    
-                    // Verificar se existe ordem de compra pendente para o material
-                    const comprasDoMaterial = db.compras.filter(c => (c.materialId === m.id || c.materialId === m.codigo) && c.status === 'Pendente');
-                    let compraBadge = `<span class="badge bg-secondary">Não</span>`;
-                    if (comprasDoMaterial.length > 0) {
-                        const totalQtdCompra = comprasDoMaterial.reduce((acc, curr) => acc + Number(curr.qtd), 0);
-                        compraBadge = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Em Andamento (${totalQtdCompra} ${m.unidade || 'UN'})</span>`;
-                    }
+      }
+    }
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>#${m.codigo || m.id}</strong></td>
-                            <td><strong>${m.nome}</strong></td>
-                            <td>${tipoBadge}</td>
-                            <td>${m.local || '-'}</td>
-                            <td class="text-danger fw-bold">${m.qtd}</td>
-                            <td>${m.min}</td>
-                            <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
-                            <td><span class="badge badge-low-stock">Abaixo do Mínimo</span></td>
-                            <td>${compraBadge}</td>
-                        </tr>
-                    `;
-                });
-            }
+    // DASHBOARD COMPLETO COM NOVO MODELO DE GRÁFICO TIPO BARRAS EXECUTIVAS
+    function carregarSelectDashboard() {
+      const selectMat = document.getElementById('dash-select-material');
+      const valorAnterior = selectMat.value;
+      selectMat.innerHTML = '';
+
+      if (db.materiais.length === 0) {
+        selectMat.innerHTML = '<option value="">Nenhum material cadastrado</option>';
+        return;
+      }
+
+      db.materiais.forEach(m => {
+        selectMat.innerHTML += `<option value="${m.id}">${m.nome} (Cód: ${m.codigo || m.id})</option>`;
+      });
+
+      if (valorAnterior && db.materiais.some(m => m.id === valorAnterior)) {
+        selectMat.value = valorAnterior;
+      }
+    }
+
+    function renderDashboardCharts() {
+      // Atualizar KPIs do Dashboard
+      const totalItens = db.materiais.length;
+      const totalUnidades = db.materiais.reduce((acc, m) => acc + Number(m.qtd), 0);
+      const totalAlertas = db.materiais.filter(m => Number(m.qtd) < Number(m.min)).length;
+      const totalMovs = db.movimentacoes.length;
+
+      document.getElementById('dash-kpi-total-itens').innerText = totalItens;
+      document.getElementById('dash-kpi-total-unidades').innerText = totalUnidades;
+      document.getElementById('dash-kpi-alertas').innerText = totalAlertas;
+      document.getElementById('dash-kpi-total-movs').innerText = totalMovs;
+
+      // Novo Gráfico de Evolução de Saldo (Barras Executivas com Linha Guia de Tendência)
+      const selectMat = document.getElementById('dash-select-material');
+      const matId = selectMat.value;
+      const mat = db.materiais.find(m => m.id === matId);
+      const ctxEvolucao = document.getElementById('chartEvolucaoEstoque').getContext('2d');
+
+      if (chartEvolucaoInstance) chartEvolucaoInstance.destroy();
+
+      if (mat) {
+        const movsComEstoqueReverso = [];
+        for (let i = db.movimentacoes.length - 1; i >= 0; i--) {
+          const m = db.movimentacoes[i];
+          if (m.materialId === mat.id || m.materialId === mat.codigo || (m.materialId || '').toLowerCase() === mat.nome.toLowerCase()) {
+            movsComEstoqueReverso.unshift({ ...m });
+          }
         }
-        // NOVO DASHBOARD: EVOLUÇÃO DO ESTOQUE AO LONGO DO TEMPO COM FILTRO
-        function carregarSelectDashboard() {
-            const selectMat = document.getElementById('dash-select-material');
-            const valorAnterior = selectMat.value;
-            selectMat.innerHTML = '';
-            if (db.materiais.length === 0) {
-                selectMat.innerHTML = '<option value="">Nenhum material cadastrado</option>';
-                return;
-            }
-            db.materiais.forEach(m => {
-                selectMat.innerHTML += `<option value="${m.id}">${m.nome} (Cód: ${m.codigo || m.id})</option>`;
-            });
-            if (valorAnterior && db.materiais.some(m => m.id === valorAnterior)) {
-                selectMat.value = valorAnterior;
-            }
+
+        let acumulador = Number(mat.qtd);
+        for (let m of movsComEstoqueReverso) {
+          if (m.tipo === 'ENTRADA') acumulador -= Number(m.qtd);
+          else if (m.tipo === 'SAIDA') acumulador += Number(m.qtd);
         }
-        function renderDashboardCharts() {
-            const selectMat = document.getElementById('dash-select-material');
-            const matId = selectMat.value;
-            const mat = db.materiais.find(m => m.id === matId);
-            const ctx = document.getElementById('chartEvolucaoEstoque').getContext('2d');
-            if (chartConsumoInstance) chartConsumoInstance.destroy();
-            if (!mat) {
-                chartConsumoInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels: [], datasets: [] },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-                return;
-            }
-            // Filtrar movimentações relacionadas ao material e ordená-las cronologicamente
-            const movsMat = db.movimentacoes
-                .filter(m => m.materialId === mat.id || m.materialId === mat.codigo || (m.materialId || '').toLowerCase() === mat.nome.toLowerCase())
-                .reverse(); // Histórico mais antigo primeiro
-            // Reconstruir histórico de estoque ao longo do tempo
-            let estoqueCorrente = Number(mat.qtd);
-            
-            // Reverter movimentações para descobrir saldo inicial no histórico
-            const movsComEstoqueReverso = [];
-            let saldoTemp = estoqueCorrente;
-            for (let i = db.movimentacoes.length - 1; i >= 0; i--) {
-                const m = db.movimentacoes[i];
-                if (m.materialId === mat.id || m.materialId === mat.codigo || (m.materialId || '').toLowerCase() === mat.nome.toLowerCase()) {
-                    movsComEstoqueReverso.unshift({ ...m });
-                }
-            }
-            // Calcular evolução pra frente partindo do ajuste das movimentações
-            let acumulador = Number(mat.qtd);
-            for (let m of movsComEstoqueReverso) {
-                if (m.tipo === 'ENTRADA') acumulador -= Number(m.qtd);
-                else if (m.tipo === 'SAIDA') acumulador += Number(m.qtd);
-            }
-            const labels = ['Saldo Inicial'];
-            const dataEvolucao = [acumulador];
-            movsComEstoqueReverso.forEach(m => {
-                if (m.tipo === 'ENTRADA') acumulador += Number(m.qtd);
-                else if (m.tipo === 'SAIDA') acumulador -= Number(m.qtd);
-                labels.push(m.data ? m.data.slice(0, 10) : 'Movimento');
-                dataEvolucao.push(acumulador);
-            });
-            chartConsumoInstance = new Chart(ctx, {
+
+        const labels = ['Saldo Inicial'];
+        const dataEvolucao = [acumulador];
+        const arrayMinimo = [Number(mat.min || 0)];
+
+        movsComEstoqueReverso.forEach(m => {
+          if (m.tipo === 'ENTRADA') acumulador += Number(m.qtd);
+          else if (m.tipo === 'SAIDA') acumulador -= Number(m.qtd);
+          labels.push(m.data ? m.data.slice(0, 10) : 'Movimento');
+          dataEvolucao.push(acumulador);
+          arrayMinimo.push(Number(mat.min || 0));
+        });
+
+        // Cores dinâmicas para as barras (Verde se acima do mínimo, Vermelho se abaixo)
+        const barColors = dataEvolucao.map(valor => valor < Number(mat.min) ? 'rgba(239, 68, 68, 0.85)' : 'rgba(0, 126, 122, 0.85)');
+
+        chartEvolucaoInstance = new Chart(ctxEvolucao, {
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                type: 'bar',
+                label: `Saldo do Estoque (${mat.unidade || 'UN'})`,
+                data: dataEvolucao,
+                backgroundColor: barColors,
+                borderRadius: 6,
+                borderSkipped: false,
+                barThickness: 'flex',
+                maxBarThickness: 45
+              },
+              {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: `Evolução de Estoque: ${mat.nome}`,
-                        data: dataEvolucao,
-                        borderColor: '#007e7a',
-                        backgroundColor: 'rgba(0, 126, 122, 0.1)',
-                        fill: true,
-                        tension: 0.2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
-                    }
+                label: `Estoque Mínimo Guia (${mat.min || 0})`,
+                data: arrayMinimo,
+                borderColor: '#ef4444',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true, position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: ${context.raw} ${mat.unidade || 'UN'}`;
+                  }
                 }
-            });
-        }
-        // PREVIEW DE FOTO E ZOOM
-        function previewImageInput(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('mat-foto-base64').value = e.target.result;
-                    document.getElementById('modal-img-preview').src = e.target.result;
-                    document.getElementById('modal-img-preview-container').style.display = 'block';
-                };
-                reader.readAsDataURL(input.files[0]);
+              }
+            },
+            scales: {
+              y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+              x: { grid: { display: false } }
             }
+          }
+        });
+      }
+
+      // 2. Gráfico de Rosca: Categorias (EPI vs Diversos)
+      const ctxCategorias = document.getElementById('chartCategorias').getContext('2d');
+      if (chartCategoriasInstance) chartCategoriasInstance.destroy();
+
+      const totalEpi = db.materiais.filter(m => m.tipoClassificacao === 'EPI').length;
+      const totalDiversos = db.materiais.filter(m => m.tipoClassificacao !== 'EPI').length;
+
+      chartCategoriasInstance = new Chart(ctxCategorias, {
+        type: 'doughnut',
+        data: {
+          labels: ['EPI (Proteção)', 'Diversos'],
+          datasets: [{
+            data: [totalEpi, totalDiversos],
+            backgroundColor: ['#3730a3', '#007e7a'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
         }
-        function zoomFoto(src, nome) {
-            document.getElementById('imgZoomModal').src = src;
-            document.getElementById('modalZoomTitle').innerText = nome;
-            new bootstrap.Modal(document.getElementById('modalZoomFoto')).show();
+      });
+
+      // 3. Gráfico de Barras: Entradas x Saídas Totais
+      const ctxEntradasSaidas = document.getElementById('chartEntradasSaidas').getContext('2d');
+      if (chartEntradasSaidasInstance) chartEntradasSaidasInstance.destroy();
+
+      const totalEntradas = db.movimentacoes.filter(m => m.tipo === 'ENTRADA').reduce((acc, m) => acc + Number(m.qtd), 0);
+      const totalSaidas = db.movimentacoes.filter(m => m.tipo === 'SAIDA').reduce((acc, m) => acc + Number(m.qtd), 0);
+
+      chartEntradasSaidasInstance = new Chart(ctxEntradasSaidas, {
+        type: 'bar',
+        data: {
+          labels: ['Movimentações Totais (Unidades)'],
+          datasets: [
+            { label: 'Entradas', data: [totalEntradas], backgroundColor: '#10b981' },
+            { label: 'Saídas', data: [totalSaidas], backgroundColor: '#ef4444' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true } }
         }
-        function carregarFiltroLocais() {
-            const selectLocal = document.getElementById('filtro-local-material');
-            const locaisUnicos = [...new Set(db.materiais.map(m => m.local).filter(l => l && l.trim() !== ''))];
-            selectLocal.innerHTML = '<option value="">Todos os Locais de Armazenamento</option>';
-            locaisUnicos.forEach(loc => {
-                selectLocal.innerHTML += `<option value="${loc}">${loc}</option>`;
-            });
+      });
+    }
+
+    // PREVIEW DE FOTO E ZOOM
+    function previewImageInput(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('mat-foto-base64').value = e.target.result;
+          document.getElementById('modal-img-preview').src = e.target.result;
+          document.getElementById('modal-img-preview-container').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function zoomFoto(src, nome) {
+      document.getElementById('imgZoomModal').src = src;
+      document.getElementById('modalZoomTitle').innerText = nome;
+      new bootstrap.Modal(document.getElementById('modalZoomFoto')).show();
+    }
+
+    function carregarFiltroLocais() {
+      const selectLocal = document.getElementById('filtro-local-material');
+      const locaisUnicos = [...new Set(db.materiais.map(m => m.local).filter(l => l && l.trim() !== ''))];
+      selectLocal.innerHTML = '<option value="">Todos os Locais de Armazenamento</option>';
+      locaisUnicos.forEach(loc => {
+        selectLocal.innerHTML += `<option value="${loc}">${loc}</option>`;
+      });
+    }
+
+    // ORDENAÇÃO DE MATERIAIS
+    function ordenarMateriais(coluna) {
+      if (ordenacaoAtual.coluna === coluna) {
+        ordenacaoAtual.asc = !ordenacaoAtual.asc;
+      } else {
+        ordenacaoAtual.coluna = coluna;
+        ordenacaoAtual.asc = true;
+      }
+      document.querySelectorAll('.sortable-header i').forEach(icon => icon.className = 'fa-solid fa-sort ms-1');
+      const iconAtual = document.querySelector(`.id-sort-${coluna}`);
+      if (iconAtual) {
+        iconAtual.className = ordenacaoAtual.asc ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1';
+      }
+      filtrarMateriais();
+    }
+
+    function filtrarMateriais() {
+      const termoBusca = document.getElementById('filtro-nome-material').value.toLowerCase().trim();
+      const localSel = document.getElementById('filtro-local-material').value;
+
+      let materiaisFiltrados = db.materiais.filter(m => {
+        const codigoStr = (m.codigo || m.id).toLowerCase();
+        const nomeStr = m.nome.toLowerCase();
+        const bateBusca = nomeStr.includes(termoBusca) || codigoStr.includes(termoBusca);
+        const bateLocal = localSel === "" || m.local === localSel;
+        return bateBusca && bateLocal;
+      });
+
+      const col = ordenacaoAtual.coluna;
+      const asc = ordenacaoAtual.asc;
+      materiaisFiltrados.sort((a, b) => {
+        let valA = a[col] !== undefined && a[col] !== null ? a[col] : '';
+        let valB = b[col] !== undefined && b[col] !== null ? b[col] : '';
+        if (typeof valA === 'number' || typeof valB === 'number') {
+          return asc ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
         }
-        // ORDENAÇÃO DE MATERIAIS
-        function ordenarMateriais(coluna) {
-            if (ordenacaoAtual.coluna === coluna) {
-                ordenacaoAtual.asc = !ordenacaoAtual.asc;
-            } else {
-                ordenacaoAtual.coluna = coluna;
-                ordenacaoAtual.asc = true;
-            }
-            // Atualizar ícones das colunas
-            document.querySelectorAll('.sortable-header i').forEach(icon => icon.className = 'fa-solid fa-sort ms-1');
-            const iconAtual = document.querySelector(`.id-sort-${coluna}`);
-            if (iconAtual) {
-                iconAtual.className = ordenacaoAtual.asc ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1';
-            }
-            filtrarMateriais();
-        }
-        function filtrarMateriais() {
-            const termoBusca = document.getElementById('filtro-nome-material').value.toLowerCase().trim();
-            const localSel = document.getElementById('filtro-local-material').value;
-            let materiaisFiltrados = db.materiais.filter(m => {
-                const codigoStr = (m.codigo || m.id).toLowerCase();
-                const nomeStr = m.nome.toLowerCase();
-                const bateBusca = nomeStr.includes(termoBusca) || codigoStr.includes(termoBusca);
-                const bateLocal = localSel === "" || m.local === localSel;
-                return bateBusca && bateLocal;
-            });
-            // Ordenação
-            const col = ordenacaoAtual.coluna;
-            const asc = ordenacaoAtual.asc;
-            materiaisFiltrados.sort((a, b) => {
-                let valA = a[col] !== undefined && a[col] !== null ? a[col] : '';
-                let valB = b[col] !== undefined && b[col] !== null ? b[col] : '';
-                if (typeof valA === 'number' || typeof valB === 'number') {
-                    return asc ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
-                }
-                return asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
-            });
-            renderTabelaMateriais(materiaisFiltrados);
-        }
-        function renderMateriais() {
-            carregarFiltroLocais();
-            filtrarMateriais();
-        }
-        function renderTabelaMateriais(lista) {
-            const tbody = document.getElementById('tbody-materiais');
-            tbody.innerHTML = '';
-            if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-3">Nenhum material encontrado com os filtros aplicados.</td></tr>`;
-                return;
-            }
-            lista.forEach(m => {
-                const isCritico = Number(m.qtd) < Number(m.min);
-                const badge = isCritico ? 
-                    `<span class="badge badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i>Crítico (${m.qtd})</span>` : 
-                    `<span class="badge badge-ok-stock">${m.qtd}</span>`;
-                const fotoElement = m.foto ? 
-                    `<img src="${m.foto}" class="img-thumbnail-preview" onclick="zoomFoto('${m.foto}', '${m.nome}')" title="Clique para ampliar">` : 
-                    `<span class="text-muted"><i class="fa-solid fa-image text-secondary opacity-50 fs-4"></i></span>`;
-                const tipoBadge = m.tipoClassificacao === 'EPI' ? 
-                    `<span class="badge badge-epi">EPI</span>` : 
-                    `<span class="badge bg-light text-dark border">Diversos</span>`;
-                const caTexto = (m.tipoClassificacao === 'EPI') ? `<strong>${m.ca || 'N/A'}</strong>` : `<span class="text-muted">N/A</span>`;
-                
-                let valTexto = '<span class="text-muted">N/A</span>';
-                if (m.tipoClassificacao === 'EPI' && m.validade && m.validade !== 'N/A') {
-                    valTexto = new Date(m.validade + 'T00:00:00').toLocaleDateString('pt-BR');
-                }
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${fotoElement}</td>
-                        <td><strong>#${m.codigo || m.id}</strong></td>
-                        <td><strong>${m.nome}</strong></td>
-                        <td>${tipoBadge}</td>
-                        <td>${m.local || '-'}</td>
-                        <td>${badge}</td>
-                        <td>${m.min}</td>
-                        <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
-                        <td>${caTexto}</td>
-                        <td>${valTexto}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarMaterial('${m.id}')"><i class="fa-solid fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="excluirMaterial('${m.id}')"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        // SUGESTÃO DINÂMICA DE CÓDIGO
-        function buscarSugestaoCodigo(valorDigitado) {
-            const helpEl = document.getElementById('sugestao-codigo-help');
-            const termo = valorDigitado.trim().toLowerCase();
-            if (!termo) {
-                helpEl.innerText = '';
-                return;
-            }
-            const codigosProximos = db.materiais
-                .map(m => m.codigo || m.id)
-                .filter(cod => String(cod).toLowerCase().startsWith(termo))
-                .sort();
-            if (codigosProximos.length > 0) {
-                const ultimoCod = codigosProximos[codigosProximos.length - 1];
-                helpEl.innerText = `💡 Último código cadastrado com este início: ${ultimoCod}`;
-            } else {
-                helpEl.innerText = '';
-            }
-        }
-        function openMaterialModal(id = null) {
-            document.getElementById('mat-foto-input').value = '';
-            document.getElementById('sugestao-codigo-help').innerText = '';
-            
-            if (id) {
-                const m = db.materiais.find(item => item.id === id);
-                document.getElementById('modalMaterialTitle').innerText = "Editar Material";
-                document.getElementById('mat-id-original').value = m.id;
-                document.getElementById('mat-codigo').value = m.codigo || m.id;
-                document.getElementById('mat-nome').value = m.nome;
-                document.getElementById('mat-tipo-classificacao').value = m.tipoClassificacao || 'DIVERSOS';
-                document.getElementById('mat-ca').value = m.ca || '';
-                document.getElementById('mat-validade').value = m.validade || '';
-                document.getElementById('mat-local').value = m.local || '';
-                document.getElementById('mat-unidade').value = m.unidade || 'UN';
-                document.getElementById('mat-qtd').value = m.qtd;
-                document.getElementById('mat-min').value = m.min;
-                document.getElementById('mat-foto-base64').value = m.foto || '';
-                toggleCamposEpi();
-                if (m.foto) {
-                    document.getElementById('modal-img-preview').src = m.foto;
-                    document.getElementById('modal-img-preview-container').style.display = 'block';
-                } else {
-                    document.getElementById('modal-img-preview-container').style.display = 'none';
-                }
-            } else {
-                document.getElementById('modalMaterialTitle').innerText = "Cadastrar Material";
-                document.getElementById('form-material').reset();
-                document.getElementById('mat-id-original').value = '';
-                document.getElementById('mat-codigo').value = '';
-                document.getElementById('mat-tipo-classificacao').value = 'DIVERSOS';
-                document.getElementById('mat-foto-base64').value = '';
-                document.getElementById('modal-img-preview-container').style.display = 'none';
-                toggleCamposEpi();
-            }
-            new bootstrap.Modal(document.getElementById('modalMaterial')).show();
-        }
-        async function salvarMaterial(e) {
-            e.preventDefault();
-            const idOriginal = document.getElementById('mat-id-original').value;
-            const novoCodigo = document.getElementById('mat-codigo').value.trim();
-            const tipoClassificacao = document.getElementById('mat-tipo-classificacao').value;
-            if (!idOriginal) {
-                const codigoExiste = db.materiais.some(m => (m.codigo || m.id).toLowerCase() === novoCodigo.toLowerCase());
-                if (codigoExiste) {
-                    alert(`O código "${novoCodigo}" já está cadastrado em outro material! Informe um código único.`);
-                    document.getElementById('mat-codigo').focus();
-                    return;
-                }
-            }
-            const matData = {
-                id: idOriginal || novoCodigo,
-                codigo: novoCodigo,
-                nome: document.getElementById('mat-nome').value,
-                tipoClassificacao: tipoClassificacao,
-                ca: tipoClassificacao === 'EPI' ? document.getElementById('mat-ca').value : 'N/A',
-                validade: tipoClassificacao === 'EPI' ? document.getElementById('mat-validade').value : 'N/A',
-                local: document.getElementById('mat-local').value,
-                unidade: document.getElementById('mat-unidade').value,
-                qtd: Number(document.getElementById('mat-qtd').value),
-                min: Number(document.getElementById('mat-min').value),
-                foto: document.getElementById('mat-foto-base64').value
-            };
-            if (idOriginal) {
-                const index = db.materiais.findIndex(m => m.id === idOriginal);
-                db.materiais[index] = matData;
-            } else {
-                db.materiais.push(matData);
-            }
-            await saveToStore('materiais', matData);
-            bootstrap.Modal.getInstance(document.getElementById('modalMaterial')).hide();
-            renderMateriais();
-            renderInicio();
-        }
-        function editarMaterial(id) {
-            openMaterialModal(id);
-        }
-        async function excluirMaterial(id) {
-            if (confirm("Tem certeza que deseja excluir este material?")) {
-                db.materiais = db.materiais.filter(m => m.id !== id);
-                await deleteFromStore('materiais', id);
-                renderMateriais();
-                renderInicio();
-            }
-        }
-        // COMPRAS
-        function renderCompras() {
-            const tbody = document.getElementById('tbody-compras');
-            tbody.innerHTML = '';
-            db.compras.forEach(c => {
-                const mat = db.materiais.find(m => m.id === c.materialId || m.codigo === c.materialId);
-                const statusBadge = c.status === 'Pendente' ? 
-                    `<span class="badge bg-warning text-dark">Pendente</span>` : 
-                    `<span class="badge bg-success">Recebido</span>`;
-                const btnAcao = c.status === 'Pendente' ? 
-                    `<button class="btn btn-sm btn-success" onclick="receberCompra('${c.id}')"><i class="fa-solid fa-box-open me-1"></i> Receber Item</button>` : 
-                    `<button class="btn btn-sm btn-secondary" disabled>Concluído</button>`;
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${c.data}</td>
-                        <td>${mat ? mat.nome : 'N/A'}</td>
-                        <td>${c.qtd} ${mat ? (mat.unidade || 'UN') : ''}</td>
-                        <td>${statusBadge}</td>
-                        <td>${btnAcao}</td>
-                    </tr>
-                `;
-            });
-        }
-        function openCompraModal() {
-            const selectMat = document.getElementById('comp-material-id');
-            selectMat.innerHTML = '';
-            db.materiais.forEach(m => selectMat.innerHTML += `<option value="${m.id}">${m.nome} (${m.unidade || 'UN'})</option>`);
-            new bootstrap.Modal(document.getElementById('modalCompra')).show();
-        }
-        async function salvarCompra(e) {
-            e.preventDefault();
-            const matId = document.getElementById('comp-material-id').value;
-            const qtd = Number(document.getElementById('comp-quantidade').value);
-            const novaOrdem = {
-                id: Date.now().toString(),
-                data: new Date().toISOString().slice(0, 10),
-                materialId: matId,
-                qtd: qtd,
-                status: 'Pendente'
-            };
-            db.compras.push(novaOrdem);
-            await saveToStore('compras', novaOrdem);
-            bootstrap.Modal.getInstance(document.getElementById('modalCompra')).hide();
-            renderCompras();
-            renderInicio();
-        }
-        async function receberCompra(compraId) {
-            const compra = db.compras.find(c => c.id === compraId);
-            if (!compra) return;
-            if (confirm("Confirmar o recebimento desta ordem de compra? O estoque do material será atualizado automaticamente.")) {
-                compra.status = 'Concluído';
-                await saveToStore('compras', compra);
-                const mat = db.materiais.find(m => m.id === compra.materialId || m.codigo === compra.materialId);
-                if (mat) {
-                    mat.qtd = Number(mat.qtd) + Number(compra.qtd);
-                    await saveToStore('materiais', mat);
-                }
-                const movData = {
-                    id: Date.now().toString(),
-                    data: new Date().toLocaleString('pt-BR'),
-                    tipo: 'ENTRADA',
-                    materialId: mat ? mat.id : compra.materialId,
-                    qtd: compra.qtd,
-                    obs: `Recebimento Ordem Compra #${compra.id}`
-                };
-                db.movimentacoes.unshift(movData);
-                await saveToStore('movimentacoes', movData);
-                renderCompras();
-                renderInicio();
-            }
-        }
-        // MOVIMENTAÇÕES
-        function parseDataPtBr(dataStr) {
-            if (!dataStr) return 0;
-            if (dataStr.includes('-')) {
-                return new Date(dataStr).getTime();
-            }
-            const partes = dataStr.split(',');
-            const dataPartes = partes[0].trim().split('/');
-            if (dataPartes.length === 3) {
-                const dia = dataPartes[0].padStart(2, '0');
-                const mes = dataPartes[1].padStart(2, '0');
-                const ano = dataPartes[2];
-                const horaStr = partes[1] ? partes[1].trim() : '00:00:00';
-                return new Date(`${ano}-${mes}-${dia}T${horaStr}`).getTime() || 0;
-            }
-            return 0;
+        return asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+      });
+
+      renderTabelaMateriais(materiaisFiltrados);
+    }
+
+    function renderMateriais() {
+      carregarFiltroLocais();
+      filtrarMateriais();
+    }
+
+    function renderTabelaMateriais(lista) {
+      const tbody = document.getElementById('tbody-materiais');
+      tbody.innerHTML = '';
+
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-3">Nenhum material encontrado com os filtros aplicados.</td></tr>`;
+        return;
+      }
+
+      lista.forEach(m => {
+        const isCritico = Number(m.qtd) < Number(m.min);
+        const badge = isCritico ? `<span class="badge badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i>Crítico (${m.qtd})</span>` : `<span class="badge badge-ok-stock">${m.qtd}</span>`;
+        const fotoElement = m.foto ? `<img src="${m.foto}" class="img-thumbnail-preview" onclick="zoomFoto('${m.foto}', '${m.nome}')" title="Clique para ampliar">` : `<span class="text-muted"><i class="fa-solid fa-image text-secondary opacity-50 fs-4"></i></span>`;
+        const tipoBadge = m.tipoClassificacao === 'EPI' ? `<span class="badge badge-epi">EPI</span>` : `<span class="badge bg-light text-dark border">Diversos</span>`;
+        const caTexto = (m.tipoClassificacao === 'EPI') ? `<strong>${m.ca || 'N/A'}</strong>` : `<span class="text-muted">N/A</span>`;
+        
+        let valTexto = '<span class="text-muted">N/A</span>';
+        if (m.tipoClassificacao === 'EPI' && m.validade && m.validade !== 'N/A') {
+          valTexto = new Date(m.validade + 'T00:00:00').toLocaleDateString('pt-BR');
         }
 
-        function renderMovimentacao() {
-            const datalist = document.getElementById('list-materiais-movimentacao');
-            datalist.innerHTML = '';
-            
-            db.materiais.forEach(m => {
-                datalist.innerHTML += `<option value="${m.nome}">Disponível: ${m.qtd} ${m.unidade || 'UN'}</option>`;
-            });
+        tbody.innerHTML += `
+          <tr>
+            <td>${fotoElement}</td>
+            <td><strong>#${m.codigo || m.id}</strong></td>
+            <td><strong>${m.nome}</strong></td>
+            <td>${tipoBadge}</td>
+            <td>${m.local || '-'}</td>
+            <td>${badge}</td>
+            <td>${m.min}</td>
+            <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
+            <td>${caTexto}</td>
+            <td>${valTexto}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="editarMaterial('${m.id}')"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="excluirMaterial('${m.id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
 
-            const movimentacoesOrdenadas = [...db.movimentacoes].sort((a, b) => {
-                const timeA = parseDataPtBr(a.data) || Number(a.id) || 0;
-                const timeB = parseDataPtBr(b.data) || Number(b.id) || 0;
-                return timeB - timeA;
-            });
+    // VERIFICAÇÃO DE NOME DUPLICADO
+    function verificarNomeDuplicado(nomeDigitado) {
+      const alertaEl = document.getElementById('alerta-nome-duplicado');
+      const idOriginal = document.getElementById('mat-id-original').value;
+      const nomeClean = nomeDigitado.trim().toLowerCase();
 
-            const tbody = document.getElementById('tbody-movimentacoes');
-            tbody.innerHTML = '';
-            movimentacoesOrdenadas.forEach(m => {
-                const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
-                const badgeTipo = m.tipo === 'ENTRADA' ? 
-                    `<span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i>Entrada</span>` : 
-                    `<span class="badge bg-danger"><i class="fa-solid fa-arrow-up me-1"></i>Saída</span>`;
-                tbody.innerHTML += `
-                    <tr>
-                        <td><small>${m.data}</small></td>
-                        <td>${badgeTipo}</td>
-                        <td>${mat ? mat.nome : 'Material Excluído'}</td>
-                        <td><strong>${m.qtd} ${mat ? (mat.unidade || 'UN') : ''}</strong></td>
-                        <td><small class="text-muted">${m.obs || '-'}</small></td>
-                    </tr>
-                `;
-            });
+      if (!nomeClean) {
+        alertaEl.innerText = '';
+        return;
+      }
+
+      const existe = db.materiais.some(m => m.nome.toLowerCase() === nomeClean && m.id !== idOriginal);
+      if (existe) {
+        alertaEl.innerText = `⚠️ Atenção: Já existe um material cadastrado com este nome!`;
+      } else {
+        alertaEl.innerText = '';
+      }
+    }
+
+    // SUGESTÃO DINÂMICA DE CÓDIGO
+    function buscarSugestaoCodigo(valorDigitado) {
+      const helpEl = document.getElementById('sugestao-codigo-help');
+      const termo = valorDigitado.trim().toLowerCase();
+      if (!termo) {
+        helpEl.innerText = '';
+        return;
+      }
+
+      const codigosProximos = db.materiais
+        .map(m => m.codigo || m.id)
+        .filter(cod => String(cod).toLowerCase().startsWith(termo))
+        .sort();
+
+      if (codigosProximos.length > 0) {
+        const ultimoCod = codigosProximos[codigosProximos.length - 1];
+        helpEl.innerText = `💡 Último código cadastrado com este início: ${ultimoCod}`;
+      } else {
+        helpEl.innerText = '';
+      }
+    }
+
+    function openMaterialModal(id = null) {
+      document.getElementById('mat-foto-input').value = '';
+      document.getElementById('sugestao-codigo-help').innerText = '';
+      document.getElementById('alerta-nome-duplicado').innerText = '';
+
+      if (id) {
+        const m = db.materiais.find(item => item.id === id);
+        document.getElementById('modalMaterialTitle').innerText = "Editar Material";
+        document.getElementById('mat-id-original').value = m.id;
+        document.getElementById('mat-codigo').value = m.codigo || m.id;
+        document.getElementById('mat-nome').value = m.nome;
+        document.getElementById('mat-tipo-classificacao').value = m.tipoClassificacao || 'DIVERSOS';
+        document.getElementById('mat-ca').value = m.ca || '';
+        document.getElementById('mat-validade').value = m.validade || '';
+        document.getElementById('mat-local').value = m.local || '';
+        document.getElementById('mat-unidade').value = m.unidade || 'UN';
+        document.getElementById('mat-qtd').value = m.qtd;
+        document.getElementById('mat-min').value = m.min;
+        document.getElementById('mat-foto-base64').value = m.foto || '';
+        toggleCamposEpi();
+
+        if (m.foto) {
+          document.getElementById('modal-img-preview').src = m.foto;
+          document.getElementById('modal-img-preview-container').style.display = 'block';
+        } else {
+          document.getElementById('modal-img-preview-container').style.display = 'none';
         }
-        async function salvarMovimentacaoComTipo(tipo) {
-            const nomeInput = document.getElementById('mov-material-input').value.trim();
-            const qtdInput = document.getElementById('mov-quantidade');
-            const qtd = Number(qtdInput.value);
-            const obs = document.getElementById('mov-obs').value;
-            if (!nomeInput) {
-                alert("Digite o nome de um material.");
-                document.getElementById('mov-material-input').focus();
-                return;
-            }
-            const mat = db.materiais.find(m => m.nome.toLowerCase() === nomeInput.toLowerCase());
-            if (!mat) {
-                alert("Material não encontrado! Digite o nome de um material cadastrado.");
-                return;
-            }
-            if (!qtd || qtd <= 0) {
-                alert("Informe uma quantidade válida maior que zero.");
-                qtdInput.focus();
-                return;
-            }
-            if (tipo === 'SAIDA' && Number(mat.qtd) < qtd) {
-                alert("Quantidade em estoque insuficiente para realizar esta saída!");
-                return;
-            }
-            if (tipo === 'ENTRADA') {
-                mat.qtd = Number(mat.qtd) + qtd;
-            } else {
-                mat.qtd = Number(mat.qtd) - qtd;
-            }
-            await saveToStore('materiais', mat);
-            const movData = {
-                id: Date.now().toString(),
-                data: new Date().toLocaleString('pt-BR'),
-                tipo: tipo,
-                materialId: mat.id,
-                qtd: qtd,
-                obs: obs
-            };
-            db.movimentacoes.unshift(movData);
-            await saveToStore('movimentacoes', movData);
-            document.getElementById('mov-material-input').value = '';
-            document.getElementById('mov-quantidade').value = '';
-            document.getElementById('mov-obs').value = '';
-            
-            renderMovimentacao();
-            renderInicio();
-            alert(`Movimentação de ${tipo} registrada com sucesso para: ${mat.nome}!`);
+      } else {
+        document.getElementById('modalMaterialTitle').innerText = "Cadastrar Material";
+        document.getElementById('form-material').reset();
+        document.getElementById('mat-id-original').value = '';
+        document.getElementById('mat-codigo').value = '';
+        document.getElementById('mat-tipo-classificacao').value = 'DIVERSOS';
+        document.getElementById('mat-foto-base64').value = '';
+        document.getElementById('modal-img-preview-container').style.display = 'none';
+        toggleCamposEpi();
+      }
+      new bootstrap.Modal(document.getElementById('modalMaterial')).show();
+    }
+
+    async function salvarMaterial(e) {
+      e.preventDefault();
+      const idOriginal = document.getElementById('mat-id-original').value;
+      const novoCodigo = document.getElementById('mat-codigo').value.trim();
+      const novoNome = document.getElementById('mat-nome').value.trim();
+      const tipoClassificacao = document.getElementById('mat-tipo-classificacao').value;
+
+      if (!idOriginal) {
+        const codigoExiste = db.materiais.some(m => (m.codigo || m.id).toLowerCase() === novoCodigo.toLowerCase());
+        if (codigoExiste) {
+          alert(`O código "${novoCodigo}" já está cadastrado em outro material! Informe um código único.`);
+          document.getElementById('mat-codigo').focus();
+          return;
         }
-        // BACKUP E EXCEL
-        function exportarExcelEstoque() {
-            if (!db.materiais || db.materiais.length === 0) {
-                alert("Não há materiais cadastrados para exportar.");
-                return;
+      }
+
+      const matData = {
+        id: idOriginal || novoCodigo,
+        codigo: novoCodigo,
+        nome: novoNome,
+        tipoClassificacao: tipoClassificacao,
+        ca: tipoClassificacao === 'EPI' ? document.getElementById('mat-ca').value : 'N/A',
+        validade: tipoClassificacao === 'EPI' ? document.getElementById('mat-validade').value : 'N/A',
+        local: document.getElementById('mat-local').value,
+        unidade: document.getElementById('mat-unidade').value,
+        qtd: Number(document.getElementById('mat-qtd').value),
+        min: Number(document.getElementById('mat-min').value),
+        foto: document.getElementById('mat-foto-base64').value
+      };
+
+      if (idOriginal) {
+        const index = db.materiais.findIndex(m => m.id === idOriginal);
+        db.materiais[index] = matData;
+      } else {
+        db.materiais.push(matData);
+      }
+
+      await saveToStore('materiais', matData);
+      bootstrap.Modal.getInstance(document.getElementById('modalMaterial')).hide();
+      renderMateriais();
+      renderInicio();
+    }
+
+    function editarMaterial(id) {
+      openMaterialModal(id);
+    }
+
+    async function excluirMaterial(id) {
+      if (confirm("Tem certeza que deseja excluir este material?")) {
+        db.materiais = db.materiais.filter(m => m.id !== id);
+        await deleteFromStore('materiais', id);
+        renderMateriais();
+        renderInicio();
+      }
+    }
+
+    // COMPRAS (Com opção de excluir)
+    function renderCompras() {
+      const tbody = document.getElementById('tbody-compras');
+      tbody.innerHTML = '';
+
+      db.compras.forEach(c => {
+        const mat = db.materiais.find(m => m.id === c.materialId || m.codigo === c.materialId);
+        const statusBadge = c.status === 'Pendente' ? `<span class="badge bg-warning text-dark">Pendente</span>` : `<span class="badge bg-success">Recebido</span>`;
+        
+        let btnAcao = c.status === 'Pendente' 
+          ? `<button class="btn btn-sm btn-success me-1" onclick="receberCompra('${c.id}')"><i class="fa-solid fa-box-open me-1"></i> Receber</button>
+             <button class="btn btn-sm btn-outline-danger" onclick="excluirCompra('${c.id}')" title="Excluir Ordem"><i class="fa-solid fa-trash"></i></button>`
+          : `<button class="btn btn-sm btn-secondary" disabled>Concluído</button>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.data}</td>
+            <td>${mat ? mat.nome : 'N/A'}</td>
+            <td>${c.qtd} ${mat ? (mat.unidade || 'UN') : ''}</td>
+            <td>${statusBadge}</td>
+            <td>${btnAcao}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function openCompraModal() {
+      const selectMat = document.getElementById('comp-material-id');
+      selectMat.innerHTML = '';
+      db.materiais.forEach(m => selectMat.innerHTML += `<option value="${m.id}">${m.nome} (${m.unidade || 'UN'})</option>`);
+      new bootstrap.Modal(document.getElementById('modalCompra')).show();
+    }
+
+    async function salvarCompra(e) {
+      e.preventDefault();
+      const matId = document.getElementById('comp-material-id').value;
+      const qtd = Number(document.getElementById('comp-quantidade').value);
+
+      const novaOrdem = {
+        id: Date.now().toString(),
+        data: new Date().toISOString().slice(0, 10),
+        materialId: matId,
+        qtd: qtd,
+        status: 'Pendente'
+      };
+
+      db.compras.push(novaOrdem);
+      await saveToStore('compras', novaOrdem);
+      bootstrap.Modal.getInstance(document.getElementById('modalCompra')).hide();
+      renderCompras();
+      renderInicio();
+    }
+
+    async function receberCompra(compraId) {
+      const compra = db.compras.find(c => c.id === compraId);
+      if (!compra) return;
+
+      if (confirm("Confirmar o recebimento desta ordem de compra? O estoque do material será atualizado automaticamente.")) {
+        compra.status = 'Concluído';
+        await saveToStore('compras', compra);
+
+        const mat = db.materiais.find(m => m.id === compra.materialId || m.codigo === compra.materialId);
+        if (mat) {
+          mat.qtd = Number(mat.qtd) + Number(compra.qtd);
+          await saveToStore('materiais', mat);
+        }
+
+        const movData = {
+          id: Date.now().toString(),
+          data: new Date().toLocaleString('pt-BR'),
+          tipo: 'ENTRADA',
+          materialId: mat ? mat.id : compra.materialId,
+          qtd: compra.qtd,
+          obs: `Recebimento Ordem Compra #${compra.id}`
+        };
+
+        db.movimentacoes.unshift(movData);
+        await saveToStore('movimentacoes', movData);
+
+        renderCompras();
+        renderInicio();
+      }
+    }
+
+    async function excluirCompra(compraId) {
+      if (confirm("Deseja realmente excluir esta ordem de compra lançada por engano?")) {
+        db.compras = db.compras.filter(c => c.id !== compraId);
+        await deleteFromStore('compras', compraId);
+        renderCompras();
+        renderInicio();
+      }
+    }
+
+    // MOVIMENTAÇÕES (Com pesquisa no histórico)
+    function parseDataPtBr(dataStr) {
+      if (!dataStr) return 0;
+      if (dataStr.includes('-')) {
+        return new Date(dataStr).getTime();
+      }
+      const partes = dataStr.split(',');
+      const dataPartes = partes[0].trim().split('/');
+      if (dataPartes.length === 3) {
+        const dia = dataPartes[0].padStart(2, '0');
+        const mes = dataPartes[1].padStart(2, '0');
+        const ano = dataPartes[2];
+        const horaStr = partes[1] ? partes[1].trim() : '00:00:00';
+        return new Date(`${ano}-${mes}-${dia}T${horaStr}`).getTime() || 0;
+      }
+      return 0;
+    }
+
+    function renderMovimentacao() {
+      const datalist = document.getElementById('list-materiais-movimentacao');
+      datalist.innerHTML = '';
+      db.materiais.forEach(m => {
+        datalist.innerHTML += `<option value="${m.nome}">Disponível: ${m.qtd} ${m.unidade || 'UN'}</option>`;
+      });
+
+      const termoHist = (document.getElementById('filtro-historico-mov')?.value || '').toLowerCase().trim();
+
+      const movimentacoesOrdenadas = [...db.movimentacoes].sort((a, b) => {
+        const timeA = parseDataPtBr(a.data) || Number(a.id) || 0;
+        const timeB = parseDataPtBr(b.data) || Number(b.id) || 0;
+        return timeB - timeA;
+      });
+
+      const tbody = document.getElementById('tbody-movimentacoes');
+      tbody.innerHTML = '';
+
+      const filtradas = movimentacoesOrdenadas.filter(m => {
+        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
+        const nomeMat = mat ? mat.nome.toLowerCase() : 'material excluído';
+        const obsText = (m.obs || '').toLowerCase();
+        return nomeMat.includes(termoHist) || obsText.includes(termoHist);
+      });
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma movimentação encontrada.</td></tr>`;
+        return;
+      }
+
+      filtradas.forEach(m => {
+        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
+        const badgeTipo = m.tipo === 'ENTRADA' ? `<span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i>Entrada</span>` : `<span class="badge bg-danger"><i class="fa-solid fa-arrow-up me-1"></i>Saída</span>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${m.data}</small></td>
+            <td>${badgeTipo}</td>
+            <td>${mat ? mat.nome : 'Material Excluído'}</td>
+            <td><strong>${m.qtd} ${mat ? (mat.unidade || 'UN') : ''}</strong></td>
+            <td><small class="text-muted">${m.obs || '-'}</small></td>
+          </tr>
+        `;
+      });
+    }
+
+    async function salvarMovimentacaoComTipo(tipo) {
+      const nomeInput = document.getElementById('mov-material-input').value.trim();
+      const qtdInput = document.getElementById('mov-quantidade');
+      const qtd = Number(qtdInput.value);
+      const obs = document.getElementById('mov-obs').value;
+
+      if (!nomeInput) {
+        alert("Digite o nome de um material.");
+        document.getElementById('mov-material-input').focus();
+        return;
+      }
+
+      const mat = db.materiais.find(m => m.nome.toLowerCase() === nomeInput.toLowerCase());
+
+      if (!mat) {
+        alert("Material não encontrado! Digite o nome de um material cadastrado.");
+        return;
+      }
+
+      if (!qtd || qtd <= 0) {
+        alert("Informe uma quantidade válida maior que zero.");
+        qtdInput.focus();
+        return;
+      }
+
+      if (tipo === 'SAIDA' && Number(mat.qtd) < qtd) {
+        alert("Quantidade em estoque insuficiente para realizar esta saída!");
+        return;
+      }
+
+      if (tipo === 'ENTRADA') {
+        mat.qtd = Number(mat.qtd) + qtd;
+      } else {
+        mat.qtd = Number(mat.qtd) - qtd;
+      }
+
+      await saveToStore('materiais', mat);
+
+      const movData = {
+        id: Date.now().toString(),
+        data: new Date().toLocaleString('pt-BR'),
+        tipo: tipo,
+        materialId: mat.id,
+        qtd: qtd,
+        obs: obs
+      };
+
+      db.movimentacoes.unshift(movData);
+      await saveToStore('movimentacoes', movData);
+
+      document.getElementById('mov-material-input').value = '';
+      document.getElementById('mov-quantidade').value = '';
+      document.getElementById('mov-obs').value = '';
+
+      renderMovimentacao();
+      renderInicio();
+      alert(`Movimentação de ${tipo} registrada com sucesso para: ${mat.nome}!`);
+    }
+
+    // BACKUP E EXCEL
+    function exportarExcelEstoque() {
+      if (!db.materiais || db.materiais.length === 0) {
+        alert("Não há materiais cadastrados para exportar.");
+        return;
+      }
+
+      const dadosExcel = db.materiais.map(m => ({
+        "Código": m.codigo || m.id,
+        "Nome do Material": m.nome,
+        "Tipo": m.tipoClassificacao || "DIVERSOS",
+        "Local de Armazenamento": m.local || "-",
+        "Qtd. Atual": m.qtd,
+        "Qtd. Mínima": m.min,
+        "Unidade de Medida": m.unidade || "UN",
+        "CA": m.ca || "N/A",
+        "Validade": m.validade || "N/A"
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Estoque Atual");
+      
+      const dataAtual = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `Estoque_Atual_CPT_${dataAtual}.xlsx`);
+    }
+
+    function exportarBackup() {
+      const jsonString = JSON.stringify(db, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_gestao_cpt_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function importarBackup() {
+      const fileInput = document.getElementById('file-import');
+      if (!fileInput.files.length) {
+        alert("Selecione um arquivo de backup (.json) primeiro.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = async function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (importedData.materiais) {
+            await clearStore('config');
+            await clearStore('materiais');
+            await clearStore('compras');
+            await clearStore('movimentacoes');
+
+            if (importedData.config) {
+              await saveToStore('config', { id: 'main', ...importedData.config });
             }
-            const dadosExcel = db.materiais.map(m => ({
-                "Código": m.codigo || m.id,
-                "Nome do Material": m.nome,
-                "Tipo": m.tipoClassificacao || "DIVERSOS",
-                "Local de Armazenamento": m.local || "-",
-                "Qtd. Atual": m.qtd,
-                "Qtd. Mínima": m.min,
-                "Unidade de Medida": m.unidade || "UN",
-                "CA": m.ca || "N/A",
-                "Validade": m.validade || "N/A"
-            }));
-            const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Estoque Atual");
-            const dataAtual = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(workbook, `Estoque_Atual_CPT_${dataAtual}.xlsx`);
-        }
-        function exportarBackup() {
-            const jsonString = JSON.stringify(db, null, 2);
-            const blob = new Blob([jsonString], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `backup_gestao_cpt_${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-        function importarBackup() {
-            const fileInput = document.getElementById('file-import');
-            if (!fileInput.files.length) {
-                alert("Selecione um arquivo de backup (.json) primeiro.");
-                return;
+            if (importedData.materiais) {
+              for (const item of importedData.materiais) await saveToStore('materiais', item);
             }
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (importedData.materiais) {
-                        await clearStore('config');
-                        await clearStore('materiais');
-                        await clearStore('compras');
-                        await clearStore('movimentacoes');
-                        if (importedData.config) {
-                            await saveToStore('config', { id: 'main', ...importedData.config });
-                        }
-                        if (importedData.materiais) {
-                            for (const item of importedData.materiais) await saveToStore('materiais', item);
-                        }
-                        if (importedData.compras) {
-                            for (const item of importedData.compras) await saveToStore('compras', item);
-                        }
-                        if (importedData.movimentacoes) {
-                            for (const item of importedData.movimentacoes) await saveToStore('movimentacoes', item);
-                        }
-                        alert("Backup restaurado com sucesso!");
-                        location.reload();
-                    } else {
-                        alert("O arquivo fornecido é inválido ou incompatível.");
-                    }
-                } catch (err) {
-                    alert("Erro ao ler o arquivo JSON de backup.");
-                }
-            };
-            reader.readAsText(file);
+            if (importedData.compras) {
+              for (const item of importedData.compras) await saveToStore('compras', item);
+            }
+            if (importedData.movimentacoes) {
+              for (const item of importedData.movimentacoes) await saveToStore('movimentacoes', item);
+            }
+
+            alert("Backup restaurado com sucesso!");
+            location.reload();
+          } else {
+            alert("O arquivo fornecido é inválido ou incompatível.");
+          }
+        } catch (err) {
+          alert("Erro ao ler o arquivo JSON de backup.");
         }
-    </script>
+      };
+      reader.readAsText(file);
+    }
+  </script>
 </body>
 </html>
 
