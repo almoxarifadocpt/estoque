@@ -120,7 +120,7 @@
 
     <div class="sidebar-footer">
       <div class="text-center text-white border-top border-secondary pt-2" style="font-size: 0.72rem;">
-        <span class="text-white fw-bold">CPT Estoque • <strong class="text-white">v3.3 (Conversor Universal de JSON)</strong></span>
+        <span class="text-white fw-bold">CPT Estoque • <strong class="text-white">v3.4 (Nuvem Supabase)</strong></span>
       </div>
     </div>
   </nav>
@@ -187,11 +187,103 @@
       </div>
     </div>
 
+    <!-- DASHBOARD -->
+    <div id="sec-dashboard" class="app-section d-none">
+      <h4 class="fw-bold mb-3">Dashboard Gerencial</h4>
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white fw-bold text-primary"><i class="fa-solid fa-chart-column me-2"></i>Evolução do Saldo do Material</div>
+        <div class="card-body">
+          <canvas id="chartEvolucaoEstoque" style="max-height: 220px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOLICITAR RETIRADA -->
+    <div id="sec-solicitacao" class="app-section d-none">
+      <div class="row justify-content-center">
+        <div class="col-md-9">
+          <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white py-2">
+              <h5 class="m-0 fw-bold"><i class="fa-solid fa-paper-plane me-2"></i>Nova Solicitação de Retirada</h5>
+            </div>
+            <div class="card-body">
+              <form id="form-solicitacao" onsubmit="salvarSolicitacao(event)">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Sua Matrícula *</label>
+                    <input type="text" id="sol-matricula" class="form-control" placeholder="Digite ou cole sua matrícula" onchange="validarMatriculaSolicitante(this.value)" required>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Nome do Solicitante</label>
+                    <input type="text" id="sol-nome-solicitante" class="form-control bg-light" placeholder="Seu nome aparecerá aqui..." required>
+                  </div>
+                </div>
+                <div id="sol-feedback-usuario" class="form-text fw-bold mb-3"></div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label fw-bold m-0"><i class="fa-solid fa-boxes-stacked me-1 text-primary"></i> Materiais a Retirar *</label>
+                  <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="adicionarLinhaMaterialSolicitacao()"><i class="fa-solid fa-plus me-1"></i> Adicionar Outro Material</button>
+                </div>
+
+                <div id="container-itens-solicitacao"></div>
+
+                <div class="mb-3 mt-3">
+                  <label class="form-label fw-bold">Justificativa / Setor de Aplicação *</label>
+                  <textarea id="sol-obs" rows="3" class="form-control" placeholder="Ex: Manutenção preventiva no setor B" required></textarea>
+                </div>
+
+                <div class="d-grid">
+                  <button type="submit" class="btn btn-primary fw-bold"><i class="fa-solid fa-paper-plane me-1"></i> Enviar Pedido para Aprovação</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MINHAS SOLICITAÇÕES -->
+    <div id="sec-minhas-solicitacoes" class="app-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Acompanhamento dos Meus Pedidos</h3>
+        <button class="btn btn-outline-primary btn-sm" onclick="renderMinhasSolicitacoes()"><i class="fa-solid fa-rotate me-1"></i> Atualizar Status</button>
+      </div>
+
+      <div class="card mb-3 p-3 bg-light">
+        <div class="row align-items-center">
+          <div class="col-md-8"><label class="form-label fw-bold m-0">Consulte o status digitando sua matrícula:</label></div>
+          <div class="col-md-4">
+            <div class="input-group input-group-sm">
+              <input type="text" id="filtro-minha-matricula" class="form-control" placeholder="Sua Matrícula..." onchange="renderMinhasSolicitacoes()">
+              <button class="btn btn-primary" onclick="renderMinhasSolicitacoes()"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Solicitante</th>
+                <th>Material(is) / Quantidade</th>
+                <th>Justificativa</th>
+                <th>Status da Solicitação</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-minhas-solicitacoes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- VER ESTOQUE -->
     <div id="sec-materiais" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Consulta de Estoque e Materiais</h3>
-        <button class="btn btn-primary btn-sm" onclick="openMaterialModal()"><i class="fa-solid fa-plus me-1"></i> Novo Material</button>
+        <button id="btn-novo-material-acao" class="btn btn-primary btn-sm" onclick="openMaterialModal()"><i class="fa-solid fa-plus me-1"></i> Novo Material</button>
       </div>
 
       <div class="card">
@@ -227,6 +319,7 @@
                 <th>Material(is) Solicitado(s)</th>
                 <th>Justificativa</th>
                 <th>Status</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="tbody-aprovacoes"></tbody>
@@ -235,18 +328,151 @@
       </div>
     </div>
 
+    <!-- COLABORADORES -->
+    <div id="sec-usuarios" class="app-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Cadastro de Colaboradores e Administradores</h3>
+        <button class="btn btn-primary btn-sm" onclick="openUsuarioModal()"><i class="fa-solid fa-user-plus me-1"></i> Novo Colaborador</button>
+      </div>
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr><th>Matrícula</th><th>Nome</th><th>Setor</th><th>Perfil</th></tr>
+            </thead>
+            <tbody id="tbody-usuarios"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPRAS -->
+    <div id="sec-compras" class="app-section d-none">
+      <h3 class="mb-3">Gestão de Compras</h3>
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr><th>Data</th><th>Material</th><th>Qtd</th><th>Status</th></tr>
+            </thead>
+            <tbody id="tbody-compras"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOVIMENTAÇÃO -->
+    <div id="sec-movimentacao" class="app-section d-none">
+      <h3 class="mb-3">Controle de Estoque (Entradas e Saídas)</h3>
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-hover align-middle m-0">
+            <thead class="table-light">
+              <tr><th>Data/Hora</th><th>Tipo</th><th>Material</th><th>Qtd</th><th>Obs.</th></tr>
+            </thead>
+            <tbody id="tbody-movimentacoes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- BACKUP E DADOS -->
     <div id="sec-backup" class="app-section d-none">
-      <h3 class="mb-3">Sincronização Completa de Backup no Supabase</h3>
+      <h3 class="mb-3">Importar Dados do Backup JSON para o Supabase</h3>
       <div class="card p-3 shadow-sm border-primary">
         <h5><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i> Subir Arquivo JSON de Backup</h5>
-        <p class="text-muted small">Selecione o seu arquivo .json de backup antigo. O sistema irá reconhecer e converter todos os dados de estoque e aprovações para o Supabase.</p>
+        <p class="text-muted small">Selecione o arquivo .json de backup para converter e salvar os dados no banco do Supabase.</p>
         <input type="file" id="file-import-json" class="form-control form-control-sm mb-3" accept=".json">
-        <button class="btn btn-primary btn-sm fw-bold" onclick="restaurarBackupUniversalSupabase()"><i class="fa-solid fa-upload me-1"></i> Converter e Forçar Envio para Supabase</button>
+        <button class="btn btn-primary btn-sm fw-bold" onclick="subirBackupFormatado()"><i class="fa-solid fa-upload me-1"></i> Subir Dados para o Supabase</button>
         <div id="import-status-msg" class="mt-2 fw-bold small"></div>
       </div>
     </div>
 
+  </div>
+
+  <!-- Modal Material -->
+  <div class="modal fade" id="modalMaterial" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cadastrar Material</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="form-material" onsubmit="salvarMaterial(event)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Código do Material *</label>
+              <input type="text" class="form-control" id="mat-codigo" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nome do Material *</label>
+              <input type="text" class="form-control" id="mat-nome" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tipo</label>
+              <input type="text" class="form-control" id="mat-tipo" placeholder="Ex: EPI, Limpeza, Diversos">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Local de Armazenamento</label>
+              <input type="text" class="form-control" id="mat-local">
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estoque Atual *</label>
+                <input type="number" class="form-control" id="mat-qtd" min="0" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estoque Mínimo *</label>
+                <input type="number" class="form-control" id="mat-min" min="0" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar no Supabase</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Colaborador -->
+  <div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cadastrar Colaborador</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="form-usuario" onsubmit="salvarUsuario(event)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Matrícula *</label>
+              <input type="text" id="usr-matricula" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nome Completo *</label>
+              <input type="text" id="usr-nome" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Setor</label>
+              <input type="text" id="usr-setor" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Perfil de Acesso *</label>
+              <select id="usr-perfil" class="form-select" required>
+                <option value="SOLICITANTE">Solicitante</option>
+                <option value="ADMIN">Administradora</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -270,15 +496,25 @@
       const resSol = await _supabase.from('solicitacoes').select('*');
       if (!resSol.error) db.solicitacoes = resSol.data || [];
 
+      const resMov = await _supabase.from('movimentacoes').select('*');
+      if (!resMov.error) db.movimentacoes = resMov.data || [];
+
+      const resComp = await _supabase.from('compras').select('*');
+      if (!resComp.error) db.compras = resComp.data || [];
+
       renderInicio();
       renderMateriais();
       renderAprovacoes();
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      document.getElementById('input-matricula-sessao').value = MATRICULA_MASTER;
+      document.getElementById('sidebarCollapse')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('content').classList.toggle('active');
+      });
       autenticarPorMatricula(MATRICULA_MASTER);
       await carregarDados();
+      carregarSelectSolicitacao();
     });
 
     function autenticarPorMatricula(matricula) {
@@ -298,12 +534,28 @@
           if (infoDiv) infoDiv.innerHTML = <span class="badge bg-secondary w-100"><i class="fa-solid fa-user me-1"></i>Solicitante (${matClean})</span>;
         }
       }
+      atualizarInterface();
+    }
+
+    function atualizarInterface() {
+      const isMaster = usuarioLogado && usuarioLogado.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase();
+      const menuColab = document.getElementById('menu-colaboradores-master');
+      if (menuColab) {
+        if (isMaster) menuColab.classList.remove('d-none');
+        else menuColab.classList.add('d-none');
+      }
     }
 
     function showSection(sectionId) {
       document.querySelectorAll('.app-section').forEach(sec => sec.classList.add('d-none'));
       const secTarget = document.getElementById(sec-${sectionId});
       if (secTarget) secTarget.classList.remove('d-none');
+
+      if (sectionId === 'inicio') renderInicio();
+      if (sectionId === 'solicitacao') carregarSelectSolicitacao();
+      if (sectionId === 'minhas-solicitacoes') renderMinhasSolicitacoes();
+      if (sectionId === 'materiais') renderMateriais();
+      if (sectionId === 'aprovacoes') renderAprovacoes();
     }
 
     function renderInicio() {
@@ -315,7 +567,149 @@
       const tbody = document.getElementById('tbody-alertas-inicio');
       tbody.innerHTML = '';
       criticos.forEach(m => {
-        tbody.innerHTML += <tr><td>#${m.codigo||m.id}</td><td>${m.nome}</td><td class="text-danger fw-bold">${m.qtd}</td><td>${m.min}</td><td>${m.unidade||'UN'}</td><td><span class="badge badge-low-stock">Crítico</span></td></tr>;
+        tbody.innerHTML += <tr><td>#${m.codigo||m.id}</td><td><strong>${m.nome}</strong></td><td class="text-danger fw-bold">${m.qtd}</td><td>${m.min}</td><td><span class="badge bg-secondary">${m.unidade||'UN'}</span></td><td><span class="badge badge-low-stock">Crítico</span></td></tr>;
+      });
+    }
+
+    function carregarSelectSolicitacao() {
+      const container = document.getElementById('container-itens-solicitacao');
+      container.innerHTML = '';
+      adicionarLinhaMaterialSolicitacao();
+
+      if (usuarioLogado && usuarioLogado.matricula) {
+        document.getElementById('sol-matricula').value = usuarioLogado.matricula;
+        validarMatriculaSolicitante(usuarioLogado.matricula);
+      }
+    }
+
+    function adicionarLinhaMaterialSolicitacao() {
+      const container = document.getElementById('container-itens-solicitacao');
+      const idLinha = Date.now().toString() + Math.random().toString(36).substring(2, 4);
+
+      let options = '<option value="">Selecione o material...</option>';
+      db.materiais.forEach(m => {
+        options += <option value="${m.id}">${m.nome} (Estoque: ${m.qtd} ${m.unidade || 'UN'})</option>;
+      });
+
+      const qtdLinhas = container.children.length;
+      const btnRemover = qtdLinhas > 0 
+        ? <button type="button" class="btn btn-outline-danger btn-sm" onclick="document.getElementById('linha-sol-${idLinha}').remove()"><i class="fa-solid fa-trash"></i></button>
+        : '';
+
+      const html = `
+        <div class="item-solicitacao-row" id="linha-sol-${idLinha}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-7">
+              <label class="form-label form-label-sm fw-semibold mb-1">Item #${qtdLinhas + 1}</label>
+              <select class="form-select form-select-sm sol-item-material" required>${options}</select>
+            </div>
+            <div class="col-md-3 col-8">
+              <label class="form-label form-label-sm fw-semibold mb-1">Quantidade</label>
+              <input type="number" min="1" class="form-control form-control-sm sol-item-qtd" placeholder="1" required>
+            </div>
+            <div class="col-md-2 col-4 text-end">
+              ${btnRemover}
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function validarMatriculaSolicitante(matriculaDigitada) {
+      const feedback = document.getElementById('sol-feedback-usuario');
+      const inputNome = document.getElementById('sol-nome-solicitante');
+      const matClean = (matriculaDigitada || '').trim().toLowerCase();
+      
+      if (!matClean) {
+        if (feedback) feedback.innerText = '';
+        if (inputNome) inputNome.value = '';
+        return;
+      }
+      
+      const u = db.usuarios.find(usr => usr.matricula.toLowerCase() === matClean);
+      if (u) {
+        feedback.className = "form-text text-success fw-bold";
+        feedback.innerText = ✓ Colaborador Cadastrado (${u.setor || 'Geral'});
+        if (inputNome) inputNome.value = u.nome;
+      } else {
+        feedback.className = "form-text text-warning fw-bold";
+        feedback.innerText = ℹ️ Matrícula não cadastrada. Digite seu nome completo no campo ao lado.;
+      }
+    }
+
+    async function salvarSolicitacao(e) {
+      e.preventDefault();
+      const matricula = document.getElementById('sol-matricula').value.trim();
+      const nomeSolicitante = document.getElementById('sol-nome-solicitante').value.trim();
+      const obs = document.getElementById('sol-obs').value;
+
+      const linhas = document.querySelectorAll('.item-solicitacao-row');
+      const itens = [];
+
+      for (let linha of linhas) {
+        const matId = linha.querySelector('.sol-item-material').value;
+        const qtd = Number(linha.querySelector('.sol-item-qtd').value);
+        const mat = db.materiais.find(m => m.id === matId);
+        
+        if (!mat) {
+          alert("Selecione um material válido em todos os campos inseridos!");
+          return;
+        }
+
+        itens.push({ materialId: mat.id, materialNome: mat.nome, qtd, unidade: mat.unidade || 'UN' });
+      }
+
+      const novaSolicitacao = {
+        id: Date.now().toString(),
+        data: new Date().toLocaleString('pt-BR'),
+        solicitanteNome: nomeSolicitante,
+        solicitanteMatricula: matricula,
+        itens,
+        obs,
+        status: 'Pendente'
+      };
+
+      const { error } = await _supabase.from('solicitacoes').insert([novaSolicitacao]);
+
+      if (error) {
+        alert("Erro ao enviar solicitação: " + error.message);
+      } else {
+        alert("Solicitação enviada com sucesso!");
+        e.target.reset();
+        await carregarDados();
+        carregarSelectSolicitacao();
+      }
+    }
+
+    function renderMinhasSolicitacoes() {
+      const tbody = document.getElementById('tbody-minhas-solicitacoes');
+      const matBusca = (document.getElementById('filtro-minha-matricula').value || '').trim().toLowerCase();
+      tbody.innerHTML = '';
+
+      const minhas = db.solicitacoes.filter(s => (s.solicitanteMatricula || '').toLowerCase().includes(matBusca));
+
+      if (minhas.length === 0) {
+        tbody.innerHTML = <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada.</td></tr>;
+        return;
+      }
+
+      minhas.forEach(s => {
+        let badgeStatus = <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Pendente</span>;
+        if (s.status === 'Aprovado') badgeStatus = <span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i>Aprovada</span>;
+        if (s.status === 'Recusado') badgeStatus = <span class="badge bg-danger"><i class="fa-solid fa-xmark-circle me-1"></i>Recusada</span>;
+
+        let lista = (s.itens || []).map(i => • <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}).join('<br>');
+
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${s.data}</small></td>
+            <td><strong>${s.solicitanteNome}</strong><br><small class="text-muted">Matrícula: ${s.solicitanteMatricula}</small></td>
+            <td>${lista || s.materialNome}</td>
+            <td><small>${s.obs}</small></td>
+            <td>${badgeStatus}</td>
+          </tr>
+        `;
       });
     }
 
@@ -335,17 +729,86 @@
       const tbody = document.getElementById('tbody-aprovacoes');
       tbody.innerHTML = '';
       if (db.solicitacoes.length === 0) {
-        tbody.innerHTML = <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada na nuvem.</td></tr>;
+        tbody.innerHTML = <tr><td colspan="6" class="text-center text-muted py-3">Nenhuma solicitação encontrada na nuvem.</td></tr>;
         return;
       }
       db.solicitacoes.forEach(s => {
         let lista = (s.itens || []).map(i => • <strong>${i.materialNome}</strong>: ${i.qtd}).join('<br>');
-        tbody.innerHTML += <tr><td><small>${s.data}</small></td><td>${s.solicitanteNome} (${s.solicitanteMatricula})</td><td>${lista || s.materialNome}</td><td><small>${s.obs}</small></td><td><span class="badge bg-warning text-dark">${s.status}</span></td></tr>;
+        let btnAcoes = s.status === 'Pendente' 
+          ? <button class="btn btn-sm btn-success me-1" onclick="aprovarSolicitacao('${s.id}')"><i class="fa-solid fa-check me-1"></i> Aprovar</button>
+          : '-';
+
+        tbody.innerHTML += <tr><td><small>${s.data}</small></td><td>${s.solicitanteNome} (${s.solicitanteMatricula})</td><td>${lista || s.materialNome}</td><td><small>${s.obs}</small></td><td><span class="badge bg-warning text-dark">${s.status}</span></td><td>${btnAcoes}</td></tr>;
       });
     }
 
-    // CONVERSOR UNIVERSAL DE PROPRIEDADES DO JSON
-    async function restaurarBackupUniversalSupabase() {
+    async function aprovarSolicitacao(id) {
+      const sol = db.solicitacoes.find(s => s.id === id);
+      if (!sol) return;
+
+      for (let item of (sol.itens || [])) {
+        const mat = db.materiais.find(m => m.id === item.materialId);
+        if (mat) {
+          const novaQtd = Number(mat.qtd) - Number(item.qtd);
+          await _supabase.from('materiais').update({ qtd: novaQtd }).eq('id', mat.id);
+        }
+      }
+
+      await _supabase.from('solicitacoes').update({ status: 'Aprovado' }).eq('id', id);
+      alert("Solicitação aprovada!");
+      await carregarDados();
+      renderAprovacoes();
+    }
+
+    function openMaterialModal() { new bootstrap.Modal(document.getElementById('modalMaterial')).show(); }
+    function openUsuarioModal() { new bootstrap.Modal(document.getElementById('modalUsuario')).show(); }
+
+    async function salvarMaterial(e) {
+      e.preventDefault();
+      const novoMat = {
+        id: Date.now().toString(),
+        codigo: document.getElementById('mat-codigo').value.trim(),
+        nome: document.getElementById('mat-nome').value.trim(),
+        tipoClassificacao: document.getElementById('mat-tipo').value || 'Diversos',
+        local: document.getElementById('mat-local').value.trim(),
+        qtd: Number(document.getElementById('mat-qtd').value),
+        min: Number(document.getElementById('mat-min').value)
+      };
+
+      const { error } = await _supabase.from('materiais').insert([novoMat]);
+      if (error) {
+        alert("Erro ao salvar material: " + error.message);
+      } else {
+        alert("Material cadastrado no Supabase!");
+        bootstrap.Modal.getInstance(document.getElementById('modalMaterial')).hide();
+        e.target.reset();
+        await carregarDados();
+      }
+    }
+
+    async function salvarUsuario(e) {
+      e.preventDefault();
+      const novoUsr = {
+        id: Date.now().toString(),
+        matricula: document.getElementById('usr-matricula').value.trim(),
+        nome: document.getElementById('usr-nome').value.trim(),
+        setor: document.getElementById('usr-setor').value.trim(),
+        perfil: document.getElementById('usr-perfil').value
+      };
+
+      const { error } = await _supabase.from('usuarios').insert([novoUsr]);
+      if (error) {
+        alert("Erro ao salvar colaborador: " + error.message);
+      } else {
+        alert("Colaborador cadastrado no Supabase!");
+        bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
+        e.target.reset();
+        await carregarDados();
+      }
+    }
+
+    // CONVERSOR AUTOMÁTICO DE NOMES DO JSON
+    async function subirBackupFormatado() {
       const fileInput = document.getElementById('file-import-json');
       const statusMsg = document.getElementById('import-status-msg');
 
@@ -355,38 +818,32 @@
       }
 
       statusMsg.className = "text-primary";
-      statusMsg.innerText = "Convertendo arquivo e salvando no Supabase...";
+      statusMsg.innerText = "Lendo arquivo e adaptando para o Supabase...";
 
       const reader = new FileReader();
       reader.onload = async function(e) {
         try {
           const rawData = JSON.parse(e.target.result);
-          
-          // Identifica se os materiais estão no array principal ou dentro do objeto
           let listaMateriais = Array.isArray(rawData) ? rawData : (rawData.materiais || rawData.items || rawData.estoque || []);
 
           if (listaMateriais.length > 0) {
             const materiaisFormatados = listaMateriais.map((m, index) => {
-              // Mapeia variações de nomes dos campos
               const id = String(m.id || m.codigo || Date.now() + index);
               const codigo = String(m.codigo || m.id || id);
               const nome = String(m.nome || m.descricao || m.material || 'Material Sem Nome');
               const tipo = String(m.tipoClassificacao || m.tipo || m.categoria || 'Diversos');
-              const local = String(m.local || m.localizacao || m.prateleira || '');
+              const local = String(m.local || m.localizacao || '');
               const unidade = String(m.unidade || m.un || 'UN');
               
-              // Busca pela quantidade em qualquer variação do JSON
               const qtd = Number(m.qtd !== undefined ? m.qtd : (m.quantidade !== undefined ? m.quantidade : (m.estoque !== undefined ? m.estoque : 0)));
-              const min = Number(m.min !== undefined ? m.min : (m.estoqueMinimo !== undefined ? m.estoqueMinimo : (m.minimo !== undefined ? m.minimo : 0)));
+              const min = Number(m.min !== undefined ? m.min : (m.estoqueMinimo !== undefined ? m.estoqueMinimo : 0));
 
               return { id, codigo, nome, tipoClassificacao: tipo, local, unidade, qtd, min };
             });
 
-            const { error: errMat } = await _supabase.from('materiais').upsert(materiaisFormatados);
-            if (errMat) throw errMat;
+            await _supabase.from('materiais').upsert(materiaisFormatados);
           }
 
-          // Trata Solicitações / Aprovações
           let listaSol = rawData.solicitacoes || rawData.pedidos || [];
           if (Array.isArray(listaSol) && listaSol.length > 0) {
             const solFormatadas = listaSol.map((s, idx) => ({
@@ -399,21 +856,19 @@
               status: String(s.status || 'Pendente')
             }));
 
-            const { error: errSol } = await _supabase.from('solicitacoes').upsert(solFormatadas);
-            if (errSol) throw errSol;
+            await _supabase.from('solicitacoes').upsert(solFormatadas);
           }
 
           statusMsg.className = "text-success";
-          statusMsg.innerText = "✓ Sucesso! Backup convertido e carregado no Supabase!";
-          alert("Todos os dados do seu arquivo JSON foram convertidos e salvos no Supabase!");
+          statusMsg.innerText = "✓ Sucesso! Backup processado e salvo no Supabase!";
+          alert("Todos os materiais e dados foram importados com sucesso para a nuvem!");
 
           await carregarDados();
           showSection('materiais');
 
         } catch (err) {
           statusMsg.className = "text-danger";
-          statusMsg.innerText = "Erro ao converter/enviar: " + err.message;
-          alert("Erro no arquivo de backup: " + err.message);
+          statusMsg.innerText = "Erro ao enviar: " + err.message;
         }
       };
 
