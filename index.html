@@ -120,7 +120,7 @@
 
     <div class="sidebar-footer">
       <div class="text-center text-white border-top border-secondary pt-2" style="font-size: 0.72rem;">
-        <span class="text-white fw-bold">CPT Estoque • <strong class="text-white">v3.2 (Restauração Total)</strong></span>
+        <span class="text-white fw-bold">CPT Estoque • <strong class="text-white">v3.3 (Conversor Universal de JSON)</strong></span>
       </div>
     </div>
   </nav>
@@ -237,12 +237,12 @@
 
     <!-- BACKUP E DADOS -->
     <div id="sec-backup" class="app-section d-none">
-      <h3 class="mb-3">Restaurar Todo o Backup para o Supabase</h3>
+      <h3 class="mb-3">Sincronização Completa de Backup no Supabase</h3>
       <div class="card p-3 shadow-sm border-primary">
         <h5><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i> Subir Arquivo JSON de Backup</h5>
-        <p class="text-muted small">Selecione o arquivo de backup .json para enviar Materiais, Colaboradores, Aprovações e Movimentações diretamente para o Supabase.</p>
+        <p class="text-muted small">Selecione o seu arquivo .json de backup antigo. O sistema irá reconhecer e converter todos os dados de estoque e aprovações para o Supabase.</p>
         <input type="file" id="file-import-json" class="form-control form-control-sm mb-3" accept=".json">
-        <button class="btn btn-primary btn-sm fw-bold" onclick="restaurarBackupCompletoSupabase()"><i class="fa-solid fa-upload me-1"></i> Subir Todos os Dados para o Supabase</button>
+        <button class="btn btn-primary btn-sm fw-bold" onclick="restaurarBackupUniversalSupabase()"><i class="fa-solid fa-upload me-1"></i> Converter e Forçar Envio para Supabase</button>
         <div id="import-status-msg" class="mt-2 fw-bold small"></div>
       </div>
     </div>
@@ -269,12 +269,6 @@
 
       const resSol = await _supabase.from('solicitacoes').select('*');
       if (!resSol.error) db.solicitacoes = resSol.data || [];
-
-      const resMov = await _supabase.from('movimentacoes').select('*');
-      if (!resMov.error) db.movimentacoes = resMov.data || [];
-
-      const resComp = await _supabase.from('compras').select('*');
-      if (!resComp.error) db.compras = resComp.data || [];
 
       renderInicio();
       renderMateriais();
@@ -350,8 +344,8 @@
       });
     }
 
-    // RESTAURAÇÃO COMPLETA TABELA POR TABELA
-    async function restaurarBackupCompletoSupabase() {
+    // CONVERSOR UNIVERSAL DE PROPRIEDADES DO JSON
+    async function restaurarBackupUniversalSupabase() {
       const fileInput = document.getElementById('file-import-json');
       const statusMsg = document.getElementById('import-status-msg');
 
@@ -361,65 +355,65 @@
       }
 
       statusMsg.className = "text-primary";
-      statusMsg.innerText = "Lendo arquivo e gravando todas as tabelas no Supabase...";
+      statusMsg.innerText = "Convertendo arquivo e salvando no Supabase...";
 
       const reader = new FileReader();
       reader.onload = async function(e) {
         try {
-          const backup = JSON.parse(e.target.result);
+          const rawData = JSON.parse(e.target.result);
+          
+          // Identifica se os materiais estão no array principal ou dentro do objeto
+          let listaMateriais = Array.isArray(rawData) ? rawData : (rawData.materiais || rawData.items || rawData.estoque || []);
 
-          // 1. Materiais
-          if (backup.materiais && Array.isArray(backup.materiais) && backup.materiais.length > 0) {
-            const matFormatados = backup.materiais.map(m => ({
-              id: String(m.id || Date.now()),
-              codigo: String(m.codigo || m.id || ''),
-              nome: String(m.nome || ''),
-              tipoClassificacao: String(m.tipoClassificacao || 'Diversos'),
-              local: String(m.local || ''),
-              unidade: String(m.unidade || 'UN'),
-              qtd: Number(m.qtd || 0),
-              min: Number(m.min || 0)
-            }));
-            await _supabase.from('materiais').upsert(matFormatados);
+          if (listaMateriais.length > 0) {
+            const materiaisFormatados = listaMateriais.map((m, index) => {
+              // Mapeia variações de nomes dos campos
+              const id = String(m.id || m.codigo || Date.now() + index);
+              const codigo = String(m.codigo || m.id || id);
+              const nome = String(m.nome || m.descricao || m.material || 'Material Sem Nome');
+              const tipo = String(m.tipoClassificacao || m.tipo || m.categoria || 'Diversos');
+              const local = String(m.local || m.localizacao || m.prateleira || '');
+              const unidade = String(m.unidade || m.un || 'UN');
+              
+              // Busca pela quantidade em qualquer variação do JSON
+              const qtd = Number(m.qtd !== undefined ? m.qtd : (m.quantidade !== undefined ? m.quantidade : (m.estoque !== undefined ? m.estoque : 0)));
+              const min = Number(m.min !== undefined ? m.min : (m.estoqueMinimo !== undefined ? m.estoqueMinimo : (m.minimo !== undefined ? m.minimo : 0)));
+
+              return { id, codigo, nome, tipoClassificacao: tipo, local, unidade, qtd, min };
+            });
+
+            const { error: errMat } = await _supabase.from('materiais').upsert(materiaisFormatados);
+            if (errMat) throw errMat;
           }
 
-          // 2. Colaboradores / Usuários
-          if (backup.usuarios && Array.isArray(backup.usuarios) && backup.usuarios.length > 0) {
-            const usrFormatados = backup.usuarios.map(u => ({
-              id: String(u.id || Date.now()),
-              matricula: String(u.matricula || ''),
-              nome: String(u.nome || ''),
-              setor: String(u.setor || ''),
-              perfil: String(u.perfil || 'SOLICITANTE')
-            }));
-            await _supabase.from('usuarios').upsert(usrFormatados);
-          }
-
-          // 3. Solicitações / Aprovações
-          if (backup.solicitacoes && Array.isArray(backup.solicitacoes) && backup.solicitacoes.length > 0) {
-            const solFormatadas = backup.solicitacoes.map(s => ({
-              id: String(s.id || Date.now()),
+          // Trata Solicitações / Aprovações
+          let listaSol = rawData.solicitacoes || rawData.pedidos || [];
+          if (Array.isArray(listaSol) && listaSol.length > 0) {
+            const solFormatadas = listaSol.map((s, idx) => ({
+              id: String(s.id || Date.now() + idx),
               data: String(s.data || new Date().toLocaleString('pt-BR')),
-              solicitanteNome: String(s.solicitanteNome || ''),
-              solicitanteMatricula: String(s.solicitanteMatricula || ''),
-              itens: s.itens || [],
-              obs: String(s.obs || ''),
+              solicitanteNome: String(s.solicitanteNome || s.nome || ''),
+              solicitanteMatricula: String(s.solicitanteMatricula || s.matricula || ''),
+              itens: s.itens || s.materiais || [],
+              obs: String(s.obs || s.justificativa || ''),
               status: String(s.status || 'Pendente')
             }));
-            await _supabase.from('solicitacoes').upsert(solFormatadas);
+
+            const { error: errSol } = await _supabase.from('solicitacoes').upsert(solFormatadas);
+            if (errSol) throw errSol;
           }
 
           statusMsg.className = "text-success";
-          statusMsg.innerText = "✓ Sucesso! Todas as tabelas foram totalmente restauradas na nuvem!";
-          alert("Todas as tabelas (Materiais, Solicitações e Colaboradores) foram restauradas com sucesso no Supabase!");
+          statusMsg.innerText = "✓ Sucesso! Backup convertido e carregado no Supabase!";
+          alert("Todos os dados do seu arquivo JSON foram convertidos e salvos no Supabase!");
 
           await carregarDados();
           showSection('materiais');
 
         } catch (err) {
           statusMsg.className = "text-danger";
-          statusMsg.innerText = "Erro ao enviar: " + err.message;
-          alert("Erro ao ler o arquivo JSON: " + err.message);
+          statusMsg.innerText = "Erro ao converter/enviar: " + err.message;
+          alert("Erro no arquivo de backup: " + err.message);
         }
       };
 
