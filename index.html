@@ -17,7 +17,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- SheetJS (xlsx) para exportação de Excel -->
@@ -205,6 +204,12 @@
       font-weight: 600;
     }
 
+    .badge-epi {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      font-weight: 600;
+    }
+
     .img-thumbnail-preview {
       width: 40px;
       height: 40px;
@@ -319,6 +324,7 @@
       <li class="menu-admin">
         <a href="#" onclick="showSection('aprovacoes')"><i class="fa-solid fa-clipboard-check"></i> Aprovações <span id="badge-count-aprovacoes" class="badge bg-danger ms-auto d-none">0</span></a>
       </li>
+      <!-- MENU RESTRITO EXCLUSIVAMENTE PARA A SUA MATRÍCULA -->
       <li id="menu-colaboradores-master" class="d-none">
         <a href="#" onclick="showSection('usuarios')"><i class="fa-solid fa-users"></i> Colaboradores</a>
       </li>
@@ -333,7 +339,7 @@
       </li>
     </ul>
 
-    <!-- Rodapé da Sidebar -->
+    <!-- Rodapé da Sidebar (Texto CPT Estoque em cor BRANCA) -->
     <div class="sidebar-footer">
       <div class="text-center text-light mb-2 opacity-75 fw-semibold" style="font-size: 0.72rem;">
         <i class="fa-solid fa-mobile-screen-button me-1"></i> INSTALAR APP MOBILE
@@ -448,16 +454,78 @@
           <h4 class="m-0 fw-bold text-dark">Dashboard Gerencial</h4>
           <small class="text-muted">Análise de estoque e movimentações em tempo real</small>
         </div>
+        <span class="badge bg-light text-secondary border fs-6"><i class="fa-solid fa-chart-pie me-1"></i>Tempo Real</span>
       </div>
-      <div class="card shadow-sm mb-3">
-        <div class="card-header bg-white fw-bold text-primary"><i class="fa-solid fa-chart-column me-2"></i>Evolução do Saldo do Material</div>
-        <div class="card-body">
-          <canvas id="chartEvolucaoEstoque" style="max-height: 220px;"></canvas>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact py-2">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.68rem;">TOTAL DE ITENS</small>
+            <h5 class="m-0 fw-bold text-dark" id="dash-kpi-total-itens">0</h5>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact success py-2">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.68rem;">UNIDADES EM ESTOQUE</small>
+            <h5 class="m-0 fw-bold text-success" id="dash-kpi-total-unidades">0</h5>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact warning py-2">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.68rem;">ITENS EM ALERTA</small>
+            <h5 class="m-0 fw-bold text-danger" id="dash-kpi-alertas">0</h5>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card kpi-card-compact info py-2">
+            <small class="text-muted d-block fw-bold" style="font-size: 0.68rem;">MOVIMENTAÇÕES</small>
+            <h5 class="m-0 fw-bold text-warning" id="dash-kpi-total-movs">0</h5>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-12">
+          <div class="card shadow-sm mb-1">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center py-2 gap-2 bg-white">
+              <span class="fw-bold text-primary"><i class="fa-solid fa-chart-column me-2"></i>Evolução do Saldo do Material</span>
+              <div class="d-flex align-items-center gap-2">
+                <label for="dash-input-search" class="form-label mb-0 small text-muted fw-bold"><i class="fa-solid fa-magnifying-glass me-1"></i>Pesquisar / Selecionar:</label>
+                <input class="form-control form-control-sm" list="list-materiais-dashboard" id="dash-input-search" placeholder="Digite o nome ou código..." onchange="selecionarMaterialViaSearch(this.value)" style="max-width: 280px;">
+                <datalist id="list-materiais-dashboard"></datalist>
+                <select id="dash-select-material" class="form-select form-select-sm w-auto d-none" onchange="renderDashboardCharts()"></select>
+              </div>
+            </div>
+            <div class="card-body py-2">
+              <canvas id="chartEvolucaoEstoque" style="height: 210px; max-height: 210px;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-md-5">
+          <div class="card shadow-sm h-100 mb-0">
+            <div class="card-header py-1 bg-white fw-bold small"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>Distribuição por Categoria</div>
+            <div class="card-body p-2 d-flex align-items-center justify-content-center">
+              <div style="width: 100%; max-width: 180px;">
+                <canvas id="chartCategorias" style="height: 150px; max-height: 150px;"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <div class="card shadow-sm h-100 mb-0">
+            <div class="card-header py-1 bg-white fw-bold small"><i class="fa-solid fa-arrow-right-arrow-left me-2 text-primary"></i>Balanço de Entradas x Saídas</div>
+            <div class="card-body p-2">
+              <canvas id="chartEntradasSaidas" style="height: 150px; max-height: 150px;"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- SEÇÃO: SOLICITAR RETIRADA -->
+    <!-- SEÇÃO: SOLICITAR RETIRADA (MULTI-ITENS) -->
     <div id="sec-solicitacao" class="app-section d-none">
       <div class="row justify-content-center">
         <div class="col-md-9">
@@ -467,6 +535,7 @@
             </div>
             <div class="card-body">
               <form id="form-solicitacao" onsubmit="salvarSolicitacao(event)">
+                
                 <div class="row">
                   <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Sua Matrícula *</label>
@@ -479,12 +548,15 @@
                 </div>
                 <div id="sol-feedback-usuario" class="form-text fw-bold mb-3"></div>
 
+                <!-- ÁREA DE MATERIAIS MULTI-ITENS -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <label class="form-label fw-bold m-0"><i class="fa-solid fa-boxes-stacked me-1 text-primary"></i> Materiais a Retirar *</label>
                   <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="adicionarLinhaMaterialSolicitacao()"><i class="fa-solid fa-plus me-1"></i> Adicionar Outro Material</button>
                 </div>
 
-                <div id="container-itens-solicitacao"></div>
+                <div id="container-itens-solicitacao">
+                  <!-- Linhas dinâmicas de materiais adicionadas via JS -->
+                </div>
 
                 <div class="mb-3 mt-3">
                   <label class="form-label fw-bold">Justificativa / Setor de Aplicação *</label>
@@ -501,7 +573,7 @@
       </div>
     </div>
 
-    <!-- SEÇÃO: MINHAS SOLICITAÇÕES -->
+    <!-- SEÇÃO: MINHAS SOLICITAÇÕES (ACOMPANHAR STATUS PENDENTE/APROVADO/RECUSADO) -->
     <div id="sec-minhas-solicitacoes" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Acompanhamento dos Meus Pedidos</h3>
@@ -510,7 +582,9 @@
 
       <div class="card mb-3 p-3 bg-light">
         <div class="row align-items-center">
-          <div class="col-md-8"><label class="form-label fw-bold m-0">Consulte o status digitando sua matrícula:</label></div>
+          <div class="col-md-8">
+            <label class="form-label fw-bold m-0">Consulte o status digitando sua matrícula:</label>
+          </div>
           <div class="col-md-4">
             <div class="input-group input-group-sm">
               <input type="text" id="filtro-minha-matricula" class="form-control" placeholder="Sua Matrícula..." onchange="renderMinhasSolicitacoes()">
@@ -532,7 +606,8 @@
                 <th>Status da Solicitação</th>
               </tr>
             </thead>
-            <tbody id="tbody-minhas-solicitacoes"></tbody>
+            <tbody id="tbody-minhas-solicitacoes">
+            </tbody>
           </table>
         </div>
       </div>
@@ -542,58 +617,111 @@
     <div id="sec-aprovacoes" class="app-section d-none">
       <h3 class="mb-3">Central de Aprovação de Retiradas</h3>
       <div class="card">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span><i class="fa-solid fa-list-check me-2"></i>Solicitações de Materiais</span>
+          <select id="filtro-status-aprovacao" class="form-select form-select-sm w-auto" onchange="renderAprovacoes()">
+            <option value="Pendente">Apenas Pendentes</option>
+            <option value="TODOS">Todas as Solicitações</option>
+            <option value="Aprovado">Aprovadas</option>
+            <option value="Recusado">Recusadas</option>
+          </select>
+        </div>
         <div class="card-body p-0 table-responsive">
           <table class="table table-sm table-striped align-middle m-0">
             <thead class="table-light">
               <tr>
                 <th>Data</th>
-                <th>Solicitante</th>
+                <th>Solicitante (Nome / Matrícula)</th>
                 <th>Material(is) Solicitado(s)</th>
                 <th>Justificativa</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th>Ações (Administradora)</th>
               </tr>
             </thead>
-            <tbody id="tbody-aprovacoes"></tbody>
+            <tbody id="tbody-aprovacoes">
+            </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- SEÇÃO: COLABORADORES -->
+    <!-- SEÇÃO: COLABORADORES (RESTRITA EXCLUSIVAMENTE À SUA MATRÍCULA) -->
     <div id="sec-usuarios" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Cadastro de Colaboradores e Administradores</h3>
         <button class="btn btn-primary btn-sm" onclick="openUsuarioModal()"><i class="fa-solid fa-user-plus me-1"></i> Novo Colaborador</button>
       </div>
-      <div class="card">
-        <div class="card-body p-0 table-responsive">
-          <table class="table table-sm table-striped align-middle m-0">
-            <thead class="table-light">
-              <tr><th>Matrícula</th><th>Nome</th><th>Setor</th><th>Perfil</th><th>Ações</th></tr>
-            </thead>
-            <tbody id="tbody-usuarios"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
 
-    <!-- SEÇÃO: MATERIAIS -->
-    <div id="sec-materiais" class="app-section d-none">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>Consulta de Estoque e Materiais</h3>
-        <button id="btn-novo-material-acao" class="btn btn-primary btn-sm" onclick="openMaterialModal()"><i class="fa-solid fa-plus me-1"></i> Novo Material</button>
-      </div>
       <div class="card">
         <div class="card-body p-0 table-responsive">
           <table class="table table-sm table-striped align-middle m-0">
             <thead class="table-light">
               <tr>
-                <th>Foto</th><th>Código</th><th>Nome</th><th>Tipo</th><th>Local</th><th>Qtd. Atual</th><th>Qtd. Mínima</th><th>Unidade</th><th>Ações</th>
+                <th>Matrícula</th>
+                <th>Nome</th>
+                <th>Setor</th>
+                <th>Perfil de Acesso</th>
+                <th>Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-materiais"></tbody>
+            <tbody id="tbody-usuarios">
+            </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: MATERIAIS (ESTOQUE) -->
+    <div id="sec-materiais" class="app-section d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Consulta de Estoque e Materiais</h3>
+        <button id="btn-novo-material-acao" class="btn btn-primary btn-sm d-none" onclick="openMaterialModal()"><i class="fa-solid fa-plus me-1"></i> Novo Material</button>
+      </div>
+
+      <div class="card mb-3 p-2">
+        <div class="row g-2">
+          <div class="col-md-7">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+              <input type="text" id="filtro-nome-material" class="form-control" placeholder="Buscar material por nome ou código..." oninput="filtrarMateriais()">
+            </div>
+          </div>
+          <div class="col-md-5">
+            <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()">
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body p-0 table-responsive">
+          <table class="table table-sm table-striped align-middle m-0">
+            <thead class="table-light">
+              <tr>
+                <th>Foto</th>
+                <th class="sortable-header" onclick="ordenarMateriais('codigo')">Código <i class="fa-solid fa-sort ms-1 id-sort-codigo"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('nome')">Nome <i class="fa-solid fa-sort ms-1 id-sort-nome"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('tipoClassificacao')">Tipo <i class="fa-solid fa-sort ms-1 id-sort-tipoClassificacao"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('local')">Local de Armazenamento <i class="fa-solid fa-sort ms-1 id-sort-local"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('qtd')">Qtd. Atual <i class="fa-solid fa-sort ms-1 id-sort-qtd"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('min')">Qtd. Mínima <i class="fa-solid fa-sort ms-1 id-sort-min"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('unidade')">Un. Medida <i class="fa-solid fa-sort ms-1 id-sort-unidade"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('ca')">CA <i class="fa-solid fa-sort ms-1 id-sort-ca"></i></th>
+                <th class="sortable-header" onclick="ordenarMateriais('validade')">Validade <i class="fa-solid fa-sort ms-1 id-sort-validade"></i></th>
+                <th class="col-acoes-admin d-none">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-materiais">
+            </tbody>
+          </table>
+        </div>
+        <!-- CONTROLES DE PAGINAÇÃO -->
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+          <small class="text-muted" id="page-info-materiais">Exibindo 0 de 0 itens</small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="btn-page-prev" onclick="mudarPaginaMateriais(-1)"><i class="fa-solid fa-chevron-left me-1"></i> Anterior</button>
+            <button class="btn btn-outline-secondary" id="btn-page-next" onclick="mudarPaginaMateriais(1)">Próxima <i class="fa-solid fa-chevron-right ms-1"></i></button>
+          </div>
         </div>
       </div>
     </div>
@@ -602,13 +730,23 @@
     <div id="sec-compras" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Gestão de Compras</h3>
-        <button class="btn btn-primary btn-sm" onclick="openCompraModal()"><i class="fa-solid fa-plus me-1"></i> Nova Ordem</button>
+        <button class="btn btn-primary btn-sm" onclick="openCompraModal()"><i class="fa-solid fa-plus me-1"></i> Nova Ordem de Compra</button>
       </div>
+
       <div class="card">
         <div class="card-body p-0 table-responsive">
           <table class="table table-sm table-striped align-middle m-0">
-            <thead class="table-light"><tr><th>Data</th><th>Material</th><th>Qtd</th><th>Status</th></tr></thead>
-            <tbody id="tbody-compras"></tbody>
+            <thead class="table-light">
+              <tr>
+                <th>Data</th>
+                <th>Material</th>
+                <th>Qtd.</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-compras">
+            </tbody>
           </table>
         </div>
       </div>
@@ -617,175 +755,500 @@
     <!-- SEÇÃO: MOVIMENTAÇÃO -->
     <div id="sec-movimentacao" class="app-section d-none">
       <h3 class="mb-3">Controle de Estoque (Entradas e Saídas)</h3>
-      <div class="card">
-        <div class="card-body p-0 table-responsive">
-          <table class="table table-sm table-hover align-middle m-0">
-            <thead class="table-light"><tr><th>Data/Hora</th><th>Tipo</th><th>Material</th><th>Qtd</th><th>Obs.</th></tr></thead>
-            <tbody id="tbody-movimentacoes"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- SEÇÃO: BACKUP -->
-    <div id="sec-backup" class="app-section d-none">
-      <h3 class="mb-3">Backup e Dados</h3>
       <div class="row g-3">
-        <div class="col-md-6">
-          <div class="card p-3 h-100">
-            <h5>Baixar Backup JSON</h5>
-            <button class="btn btn-primary btn-sm mt-3" onclick="exportarBackup()">Baixar Arquivo JSON</button>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card p-3 h-100">
-            <h5>Restaurar Backup JSON</h5>
-            <input type="file" id="file-import" class="form-control form-control-sm mb-2" accept=".json">
-            <button class="btn btn-warning btn-sm" onclick="importarBackup()">Restaurar Dados</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Modais -->
-  <div class="modal fade" id="modalMaterial" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Cadastrar Material</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <form id="form-material" onsubmit="salvarMaterial(event)">
-          <div class="modal-body">
-            <input type="hidden" id="mat-id-original">
-            <div class="mb-3"><label class="form-label">Código *</label><input type="text" class="form-control" id="mat-codigo" required></div>
-            <div class="mb-3"><label class="form-label">Nome *</label><input type="text" class="form-control" id="mat-nome" required></div>
-            <div class="mb-3"><label class="form-label">Tipo</label><input type="text" class="form-control" id="mat-tipo"></div>
-            <div class="mb-3"><label class="form-label">Local</label><input type="text" class="form-control" id="mat-local"></div>
-            <div class="row">
-              <div class="col-md-6 mb-3"><label class="form-label">Estoque Atual *</label><input type="number" class="form-control" id="mat-qtd" required></div>
-              <div class="col-md-6 mb-3"><label class="form-label">Estoque Mínimo *</label><input type="number" class="form-control" id="mat-min" required></div>
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header py-2"><i class="fa-solid fa-arrow-right-to-city me-2"></i>Registrar Movimento</div>
+            <div class="card-body">
+              <form id="form-movimentacao" onsubmit="event.preventDefault();">
+                <div class="mb-3">
+                  <label class="form-label form-label-sm">Material</label>
+                  <input class="form-control form-control-sm" list="list-materiais-movimentacao" id="mov-material-input" placeholder="Digite para buscar pelo nome..." required>
+                  <datalist id="list-materiais-movimentacao"></datalist>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label form-label-sm">Quantidade</label>
+                  <input type="number" min="1" class="form-control form-control-sm" id="mov-quantidade" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label form-label-sm">Observação</label>
+                  <input type="text" class="form-control form-control-sm" id="mov-obs" placeholder="Ex: Uso na manutenção, NF 1234...">
+                </div>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <button type="button" class="btn btn-success btn-sm w-100" onclick="salvarMovimentacaoComTipo('ENTRADA')">
+                      <i class="fa-solid fa-plus-circle me-1"></i> Entrada
+                    </button>
+                  </div>
+                  <div class="col-6">
+                    <button type="button" class="btn btn-danger btn-sm w-100" onclick="salvarMovimentacaoComTipo('SAIDA')">
+                      <i class="fa-solid fa-minus-circle me-1"></i> Saída
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
-          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
-        </form>
+        </div>
+
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span><i class="fa-solid fa-list-check me-2"></i>Histórico de Movimentações</span>
+              <div class="input-group input-group-sm w-auto">
+                <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" id="filtro-historico-mov" class="form-control" placeholder="Buscar no histórico..." oninput="renderMovimentacao()">
+              </div>
+            </div>
+            <div class="card-body p-0 table-responsive">
+              <table class="table table-sm table-hover align-middle m-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Data/Hora</th>
+                    <th>Tipo</th>
+                    <th>Material</th>
+                    <th>Qtd</th>
+                    <th>Obs.</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-movimentacoes">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- SEÇÃO: BACKUP E DADOS -->
+    <div id="sec-backup" class="app-section d-none">
+      <h3 class="mb-3">Backup e Gestão do Banco de Dados</h3>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="card p-3 h-100">
+            <h5><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar para Excel</h5>
+            <p class="text-muted small">Exporte a planilha completa do seu estoque atual (.xlsx) pronta para impressão ou relatórios.</p>
+            <button class="btn btn-success btn-sm mt-auto" onclick="exportarExcelEstoque()"><i class="fa-solid fa-file-excel me-1"></i> Baixar Planilha Excel</button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-3 h-100">
+            <h5><i class="fa-solid fa-download text-primary me-2"></i> Exportar Backup JSON</h5>
+            <p class="text-muted small">Faça o download de todos os seus dados em formato JSON seguro para backup integral do sistema.</p>
+            <button class="btn btn-primary btn-sm mt-auto" onclick="exportarBackup()"><i class="fa-solid fa-file-export me-1"></i> Baixar Arquivo JSON</button>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card p-3 h-100">
+            <h5><i class="fa-solid fa-upload text-warning me-2"></i> Importar Backup</h5>
+            <p class="text-muted small">Restaure as informações do sistema a partir de um arquivo JSON anteriormente baixado.</p>
+            <input type="file" id="file-import" class="form-control form-control-sm mb-2" accept=".json">
+            <button class="btn btn-warning btn-sm mt-auto" onclick="importarBackup()"><i class="fa-solid fa-file-import me-1"></i> Restaurar Dados</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
+  <!-- MODAIS -->
+
+  <!-- Modal Colaborador / Usuário -->
   <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Cadastrar Colaborador</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalUsuarioTitle">Cadastrar Colaborador</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
         <form id="form-usuario" onsubmit="salvarUsuario(event)">
           <div class="modal-body">
-            <div class="mb-3"><label class="form-label">Matrícula *</label><input type="text" id="usr-matricula" class="form-control" required></div>
-            <div class="mb-3"><label class="form-label">Nome *</label><input type="text" id="usr-nome" class="form-control" required></div>
-            <div class="mb-3"><label class="form-label">Setor</label><input type="text" id="usr-setor" class="form-control"></div>
-            <div class="mb-3"><label class="form-label">Perfil *</label><select id="usr-perfil" class="form-select"><option value="SOLICITANTE">Solicitante</option><option value="ADMIN">Administradora</option></select></div>
+            <input type="hidden" id="usr-id">
+            <div class="mb-3">
+              <label class="form-label">Matrícula *</label>
+              <input type="text" id="usr-matricula" class="form-control" placeholder="Ex: CPT-1020" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nome Completo *</label>
+              <input type="text" id="usr-nome" class="form-control" placeholder="Ex: Maria Oliveira" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Setor</label>
+              <input type="text" id="usr-setor" class="form-control" placeholder="Ex: Manutenção / Operações">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Perfil de Acesso *</label>
+              <select id="usr-perfil" class="form-select" required>
+                <option value="SOLICITANTE">Solicitante (Apenas Retiradas)</option>
+                <option value="ADMIN">Administradora (Acesso Total)</option>
+              </select>
+            </div>
           </div>
-          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
         </form>
       </div>
     </div>
   </div>
 
+  <!-- Modal Material -->
+  <div class="modal fade" id="modalMaterial" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalMaterialTitle">Cadastrar Material</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="form-material" onsubmit="salvarMaterial(event)">
+          <div class="modal-body">
+            <input type="hidden" id="mat-id-original">
+            <input type="hidden" id="mat-foto-base64">
+            
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Código do Material *</label>
+                <input type="text" class="form-control" id="mat-codigo" placeholder="Ex: 00045" oninput="buscarSugestaoCodigo(this.value)" required>
+                <div id="sugestao-codigo-help" class="form-text text-primary font-monospace fw-bold" style="min-height: 18px;"></div>
+              </div>
+              <div class="col-md-5 mb-3">
+                <label class="form-label">Nome do Material *</label>
+                <input type="text" class="form-control" id="mat-nome" oninput="verificarNomeDuplicado(this.value)" required>
+                <div id="alerta-nome-duplicado" class="form-text text-danger fw-bold" style="min-height: 18px;"></div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Tipo do Material</label>
+                <select class="form-select" id="mat-tipo-classificacao" onchange="toggleCamposEpi()" required>
+                  <option value="DIVERSOS">Diversos</option>
+                  <option value="ALIMENTACAO">Alimentação</option>
+                  <option value="EPI">EPI (Proteção)</option>
+                  <option value="LIMPEZA">Limpeza</option>
+                  <option value="UNIFORME">Uniforme</option>
+                  <option value="MANUTENCAO">Manutenção</option>
+                  <option value="OPERACAO">Operação</option>
+                  <option value="ESCRITORIO">Escritório</option>
+                  <option value="MOBILIARIO">Mobiliário</option>
+                  <option value="TI">T.I</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row" id="container-campos-epi">
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">CA</label>
+                <input type="text" class="form-control" id="mat-ca" placeholder="Ex: 12345">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Validade</label>
+                <input type="date" class="form-control" id="mat-validade">
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Local de Armazenamento</label>
+                <input type="text" class="form-control" id="mat-local" placeholder="Ex: Corredor A - Prateleira 3">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Unidade de Medida</label>
+                <select class="form-select" id="mat-unidade" required>
+                  <option value="UN">Unidade (UN)</option>
+                  <option value="KG">Quilograma (KG)</option>
+                  <option value="M">Metro (M)</option>
+                  <option value="M2">Metro Quadrado (M²)</option>
+                  <option value="M3">Metro Cúbico (M³)</option>
+                  <option value="L">Litro (L)</option>
+                  <option value="CX">Caixa (CX)</option>
+                  <option value="PCT">Pacote (PCT)</option>
+                  <option value="PAR">Par (PAR)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estoque Atual</label>
+                <input type="number" class="form-control" id="mat-qtd" required min="0">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Estoque Mínimo</label>
+                <input type="number" class="form-control" id="mat-min" required min="0">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Foto do Material</label>
+              <input type="file" class="form-control" id="mat-foto-input" accept="image/*" onchange="previewImageInput(this)">
+              <div class="mt-2 text-center" id="modal-img-preview-container" style="display: none;">
+                <img id="modal-img-preview" src="" alt="Pré-visualização" class="img-thumbnail" style="max-height: 120px;">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Zoom Foto -->
+  <div class="modal fade" id="modalZoomFoto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalZoomTitle">Visualização da Foto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center p-3">
+          <img id="imgZoomModal" src="" alt="Foto Ampliada" class="img-fluid rounded shadow">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Compra -->
+  <div class="modal fade" id="modalCompra" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nova Ordem de Compra</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="form-compra" onsubmit="salvarCompra(event)">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Material</label>
+              <select class="form-select" id="comp-material-id" required>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Quantidade</label>
+              <input type="number" min="1" class="form-control" id="comp-quantidade" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Gerar Ordem de Compra</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Bootstrap e Scripts da Aplicação -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    const MATRICULA_MASTER = 'c0676996';
-    let db = { materiais: [], compras: [], movimentacoes: [], usuarios: [], solicitacoes: [] };
-    let usuarioLogado = null;
+    // CONFIGURAÇÃO DE MATRÍCULA MASTER (DIGITE A SUA MATRÍCULA REAL AQUI)
+    const MATRICULA_MASTER = 'c0676996';'81011679'
 
-    // BANCO LOCAL INDEXEDDB / LOCALSTORAGE DO SISTEMA ORIGINAL
-    function abrirBanco() {
+    let db = {
+      config: { logo: "", sidebarIcon: "" },
+      materiais: [],
+      compras: [],
+      movimentacoes: [],
+      usuarios: [],
+      solicitacoes: []
+    };
+
+    let usuarioLogado = null;
+    let deferredPrompt = null;
+
+    let chartEvolucaoInstance = null;
+    let chartCategoriasInstance = null;
+    let chartEntradasSaidasInstance = null;
+
+    let idb = null;
+    const DB_NAME = 'gestao_estoque_cpt_idb';
+    const DB_VERSION = 2;
+
+    let ordenacaoAtual = { coluna: 'nome', asc: true };
+
+    let paginaAtualMateriais = 1;
+    const itensPorPaginaMateriais = 10;
+    let materiaisFiltradosAtuais = [];
+
+    // INDEXEDDB
+    function initDB() {
       return new Promise((resolve, reject) => {
-        let request = indexedDB.open("CPTEstoqueDB", 2);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
         request.onupgradeneeded = (e) => {
-          let dbInstance = e.target.result;
-          if (!dbInstance.objectStoreNames.contains('materiais')) dbInstance.createObjectStore('materiais', { keyPath: 'id' });
-          if (!dbInstance.objectStoreNames.contains('compras')) dbInstance.createObjectStore('compras', { keyPath: 'id' });
-          if (!dbInstance.objectStoreNames.contains('movimentacoes')) dbInstance.createObjectStore('movimentacoes', { keyPath: 'id' });
-          if (!dbInstance.objectStoreNames.contains('usuarios')) dbInstance.createObjectStore('usuarios', { keyPath: 'id' });
-          if (!dbInstance.objectStoreNames.contains('solicitacoes')) dbInstance.createObjectStore('solicitacoes', { keyPath: 'id' });
+          const dbRef = e.target.result;
+          if (!dbRef.objectStoreNames.contains('config')) dbRef.createObjectStore('config', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('materiais')) dbRef.createObjectStore('materiais', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('compras')) dbRef.createObjectStore('compras', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('movimentacoes')) dbRef.createObjectStore('movimentacoes', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('usuarios')) dbRef.createObjectStore('usuarios', { keyPath: 'id' });
+          if (!dbRef.objectStoreNames.contains('solicitacoes')) dbRef.createObjectStore('solicitacoes', { keyPath: 'id' });
+        };
+        request.onsuccess = (e) => {
+          idb = e.target.result;
+          resolve(idb);
+        };
+        request.onerror = (e) => {
+          console.error("Erro ao abrir IndexedDB", e);
+          reject(e);
         };
       });
     }
 
-    async function carregarDadosLocal() {
-      const conn = await abrirBanco();
-      db.materiais = await lerStore(conn, 'materiais');
-      db.compras = await lerStore(conn, 'compras');
-      db.movimentacoes = await lerStore(conn, 'movimentacoes');
-      db.usuarios = await lerStore(conn, 'usuarios');
-      db.solicitacoes = await lerStore(conn, 'solicitacoes');
-
-      if (!db.usuarios.some(u => u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase())) {
-        db.usuarios.push({ id: 'usr_master', matricula: MATRICULA_MASTER, nome: 'Administradora Master', setor: 'Almoxarifado', perfil: 'ADMIN' });
-      }
-      renderInicio();
-    }
-
-    function lerStore(conn, storeName) {
+    function getAllFromStore(storeName) {
       return new Promise((resolve) => {
-        let tx = conn.transaction(storeName, 'readonly');
-        let store = tx.objectStore(storeName);
-        let req = store.getAll();
+        const tx = idb.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
         req.onsuccess = () => resolve(req.result || []);
         req.onerror = () => resolve([]);
       });
     }
 
-    async function salvarStore(storeName, objeto) {
-      const conn = await abrirBanco();
+    function saveToStore(storeName, item) {
       return new Promise((resolve, reject) => {
-        let tx = conn.transaction(storeName, 'readwrite');
-        let store = tx.objectStore(storeName);
-        store.put(objeto);
-        tx.oncomplete = () => resolve(true);
-        tx.onerror = () => reject(tx.error);
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put(item);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
       });
     }
 
-    async function deletarStore(storeName, id) {
-      const conn = await abrirBanco();
+    function deleteFromStore(storeName, id) {
       return new Promise((resolve, reject) => {
-        let tx = conn.transaction(storeName, 'readwrite');
-        let store = tx.objectStore(storeName);
-        store.delete(id);
-        tx.oncomplete = () => resolve(true);
-        tx.onerror = () => reject(tx.error);
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
       });
+    }
+
+    function clearStore(storeName) {
+      return new Promise((resolve, reject) => {
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    async function carregarDados() {
+      await initDB();
+      
+      const configArr = await getAllFromStore('config');
+      const mainConfig = configArr.find(c => c.id === 'main');
+      db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebarIcon || "" } : { logo: "", sidebarIcon: "" };
+      
+      db.materiais = await getAllFromStore('materiais');
+      db.compras = await getAllFromStore('compras');
+      db.movimentacoes = await getAllFromStore('movimentacoes');
+      db.usuarios = await getAllFromStore('usuarios');
+      db.solicitacoes = await getAllFromStore('solicitacoes');
+
+      if (!db.usuarios.some(u => u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase())) {
+        const masterUsr = {
+          id: 'usr_master',
+          matricula: MATRICULA_MASTER,
+          nome: 'Administradora Master',
+          setor: 'Almoxarifado',
+          perfil: 'ADMIN'
+        };
+        db.usuarios.push(masterUsr);
+        await saveToStore('usuarios', masterUsr);
+      }
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      await carregarDadosLocal();
-      document.getElementById('sidebarCollapse')?.addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('active');
-        document.getElementById('content').classList.toggle('active');
-      });
+      await carregarDados();
+      setupResponsiveSidebar();
+      setupPWA();
+      renderLogoSistema();
       autenticarPorMatricula('');
     });
 
+    function setupResponsiveSidebar() {
+      document.getElementById('sidebarCollapse').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('content').classList.toggle('active');
+      });
+    }
+
+    function setupPWA() {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+
+      const manifest = {
+        name: "Gestão de Estoque CPT",
+        short_name: "Estoque CPT",
+        start_url: "./index.html",
+        display: "standalone",
+        background_color: "#f8fafc",
+        theme_color: "#007e7a",
+        icons: [{
+          src: "https://cdn-icons-png.flaticon.com/512/2897/2897785.png",
+          sizes: "512x512",
+          type: "image/png"
+        }]
+      };
+      const stringManifest = JSON.stringify(manifest);
+      const blobManifest = new Blob([stringManifest], {type: 'application/json'});
+      const manifestURL = URL.createObjectURL(blobManifest);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestURL;
+      document.head.appendChild(link);
+
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+          self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+          self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+        `;
+        const blobSW = new Blob([swCode], {type: 'text/javascript'});
+        const swURL = URL.createObjectURL(blobSW);
+        navigator.serviceWorker.register(swURL).catch(() => {});
+      }
+    }
+
+    function instalarPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('App instalado com sucesso!');
+          }
+          deferredPrompt = null;
+        });
+      } else {
+        alert("Para instalar no celular:\n\nAndroid (Chrome): Abra o menu do navegador e toque em 'Adicionar à Tela Inicial'.\n\niOS (Safari): Toque em 'Compartilhar' e escolha 'Adicionar à Tela de Início'.");
+      }
+    }
+
+    // AUTENTICAÇÃO POR MATRÍCULA
     function autenticarPorMatricula(matricula) {
       const matClean = (matricula || '').trim().toLowerCase();
       const infoDiv = document.getElementById('sessao-user-info');
-      const u = db.usuarios.find(usr => usr.matricula.toLowerCase() === matClean);
+      
+      const usuarioEncontrado = db.usuarios.find(u => u.matricula.toLowerCase() === matClean);
 
-      if (u) {
-        usuarioLogado = u;
-        if (infoDiv) infoDiv.innerHTML = `<span class="badge bg-success w-100"><i class="fa-solid fa-circle-check me-1"></i>${u.nome}</span>`;
-      } else if (matClean === MATRICULA_MASTER.toLowerCase()) {
-        usuarioLogado = { matricula: MATRICULA_MASTER, nome: 'Administradora Master', perfil: 'ADMIN' };
-        if (infoDiv) infoDiv.innerHTML = `<span class="badge bg-success w-100"><i class="fa-solid fa-user-shield me-1"></i>Administradora Master</span>`;
+      if (usuarioEncontrado) {
+        usuarioLogado = usuarioEncontrado;
+        if (infoDiv) infoDiv.innerHTML = `<span class="badge bg-success w-100"><i class="fa-solid fa-circle-check me-1"></i>${usuarioEncontrado.nome}</span>`;
       } else if (matClean !== '') {
-        usuarioLogado = { matricula: matClean, nome: 'Solicitante', perfil: 'SOLICITANTE' };
+        usuarioLogado = { matricula: matClean, nome: 'Visitante', perfil: 'SOLICITANTE' };
         if (infoDiv) infoDiv.innerHTML = `<span class="badge bg-secondary w-100"><i class="fa-solid fa-user-clock me-1"></i>Solicitante (${matClean})</span>`;
       } else {
         usuarioLogado = null;
         if (infoDiv) infoDiv.innerHTML = `<span class="badge bg-warning text-dark w-100"><i class="fa-solid fa-lock me-1"></i>Acesso Solicitante</span>`;
       }
+
       atualizarInterfacePorPerfil();
     }
 
@@ -797,16 +1260,69 @@
         if (isAdmin) el.classList.remove('d-none');
         else el.classList.add('d-none');
       });
+
       document.querySelectorAll('.menu-solicitante').forEach(el => el.classList.remove('d-none'));
 
-      const menuColab = document.getElementById('menu-colaboradores-master');
-      if (menuColab) {
-        if (isMaster) menuColab.classList.remove('d-none');
-        else menuColab.classList.add('d-none');
+      const menuColaboradores = document.getElementById('menu-colaboradores-master');
+      if (menuColaboradores) {
+        if (isMaster) menuColaboradores.classList.remove('d-none');
+        else menuColaboradores.classList.add('d-none');
       }
 
-      if (!isAdmin) showSection('solicitacao');
-      else showSection('inicio');
+      const btnNovoMaterial = document.getElementById('btn-novo-material-acao');
+      if (btnNovoMaterial) {
+        if (isAdmin) btnNovoMaterial.classList.remove('d-none');
+        else btnNovoMaterial.classList.add('d-none');
+      }
+
+      if (!isAdmin) {
+        showSection('solicitacao');
+      } else {
+        showSection('inicio');
+      }
+    }
+
+    async function alterarLogoSistema(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          if(!db.config) db.config = {};
+          db.config.logo = e.target.result;
+          await saveToStore('config', { id: 'main', logo: db.config.logo, sidebarIcon: db.config.sidebarIcon || "" });
+          renderLogoSistema();
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function renderLogoSistema() {
+      const imgElement = document.getElementById('img-logo-sistema');
+      const placeholder = document.getElementById('placeholder-logo-sistema');
+      if (db.config && db.config.logo) {
+        imgElement.src = db.config.logo;
+        imgElement.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        imgElement.style.display = 'none';
+        placeholder.style.display = 'block';
+      }
+    }
+
+    function toggleCamposEpi() {
+      const tipo = document.getElementById('mat-tipo-classificacao').value;
+      const caInput = document.getElementById('mat-ca');
+      const valInput = document.getElementById('mat-validade');
+      if (tipo === 'EPI') {
+        caInput.disabled = false;
+        valInput.disabled = false;
+        caInput.value = (caInput.value === 'N/A') ? '' : caInput.value;
+        valInput.value = (valInput.value === 'N/A') ? '' : valInput.value;
+      } else {
+        caInput.value = 'N/A';
+        valInput.value = 'N/A';
+        caInput.disabled = true;
+        valInput.disabled = true;
+      }
     }
 
     function showSection(sectionId) {
@@ -816,37 +1332,77 @@
       const secTarget = document.getElementById(`sec-${sectionId}`);
       if(secTarget) secTarget.classList.remove('d-none');
       
+      const links = document.querySelectorAll('#sidebar ul li a');
+      links.forEach(a => {
+        if(a.getAttribute('onclick') && a.getAttribute('onclick').includes(sectionId)) {
+          a.parentElement.classList.add('active');
+        }
+      });
+
       if(sectionId === 'inicio') renderInicio();
+      if(sectionId === 'dashboard') { carregarSelectDashboard(); renderDashboardCharts(); }
       if(sectionId === 'solicitacao') carregarSelectSolicitacao();
       if(sectionId === 'minhas-solicitacoes') renderMinhasSolicitacoes();
       if(sectionId === 'aprovacoes') renderAprovacoes();
       if(sectionId === 'usuarios') renderUsuarios();
-      if(sectionId === 'materiais') renderMateriais();
+      if(sectionId === 'materiais') { carregarFiltroLocais(); renderMateriais(); }
       if(sectionId === 'compras') renderCompras();
       if(sectionId === 'movimentacao') renderMovimentacao();
     }
 
+    // INÍCIO
     function renderInicio() {
-      document.getElementById('kpi-total-materiais').innerText = db.materiais.length;
-      const criticos = db.materiais.filter(m => Number(m.qtd) < Number(m.min));
-      document.getElementById('kpi-estoque-critico').innerText = criticos.length;
-      document.getElementById('kpi-solicitacoes-pendentes').innerText = db.solicitacoes.filter(s => s.status === 'Pendente').length;
+      const totalMateriais = db.materiais.length;
+      const estoqueCritico = db.materiais.filter(m => Number(m.qtd) < Number(m.min));
+      const pendentesCount = db.solicitacoes.filter(s => s.status === 'Pendente').length;
+
+      document.getElementById('kpi-total-materiais').innerText = totalMateriais;
+      document.getElementById('kpi-estoque-critico').innerText = estoqueCritico.length;
+      document.getElementById('kpi-solicitacoes-pendentes').innerText = pendentesCount;
+
+      const badgeCount = document.getElementById('badge-count-aprovacoes');
+      if(pendentesCount > 0) {
+        badgeCount.innerText = pendentesCount;
+        badgeCount.classList.remove('d-none');
+      } else {
+        badgeCount.classList.add('d-none');
+      }
 
       const tbody = document.getElementById('tbody-alertas-inicio');
       tbody.innerHTML = '';
-      if (criticos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-success py-2">Todos os estoques normais!</td></tr>`;
+
+      if (estoqueCritico.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-success py-2"><i class="fa-solid fa-circle-check me-1"></i> Todos os estoques estão com nível normal!</td></tr>`;
       } else {
-        criticos.forEach(m => {
-          tbody.innerHTML += `<tr><td>#${m.codigo||m.id}</td><td>${m.nome}</td><td class="text-danger fw-bold">${m.qtd}</td><td>${m.min}</td><td>${m.unidade||'UN'}</td><td><span class="badge badge-low-stock">Crítico</span></td><td>-</td></tr>`;
+        estoqueCritico.forEach(m => {
+          const comprasDoMaterial = db.compras.filter(c => (c.materialId === m.id || c.materialId === m.codigo) && c.status === 'Pendente');
+          let compraBadge = `<span class="badge bg-secondary">Não</span>`;
+          if (comprasDoMaterial.length > 0) {
+            const totalQtdCompra = comprasDoMaterial.reduce((acc, curr) => acc + Number(curr.qtd), 0);
+            compraBadge = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Em Andamento (${totalQtdCompra} ${m.unidade || 'UN'})</span>`;
+          }
+
+          tbody.innerHTML += `
+            <tr>
+              <td><strong>#${m.codigo || m.id}</strong></td>
+              <td><strong>${m.nome}</strong></td>
+              <td class="text-danger fw-bold">${m.qtd}</td>
+              <td>${m.min}</td>
+              <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
+              <td><span class="badge badge-low-stock">Abaixo do Mínimo</span></td>
+              <td>${compraBadge}</td>
+            </tr>
+          `;
         });
       }
     }
 
+    // SOLICITAÇÕES DE RETIRADA (SUPORTE A MULTI-ITENS)
     function carregarSelectSolicitacao() {
       const container = document.getElementById('container-itens-solicitacao');
       container.innerHTML = '';
       adicionarLinhaMaterialSolicitacao();
+
       if(usuarioLogado && usuarioLogado.matricula) {
         document.getElementById('sol-matricula').value = usuarioLogado.matricula;
         validarMatriculaSolicitante(usuarioLogado.matricula);
@@ -856,160 +1412,1136 @@
     function adicionarLinhaMaterialSolicitacao() {
       const container = document.getElementById('container-itens-solicitacao');
       const idLinha = Date.now().toString() + Math.random().toString(36).substring(2, 5);
-      let options = '<option value="">Selecione...</option>';
-      db.materiais.forEach(m => options += `<option value="${m.id}">${m.nome} (Estoque: ${m.qtd})</option>`);
-      
-      const html = `<div class="item-solicitacao-row" id="linha-sol-${idLinha}"><div class="row g-2 align-items-end"><div class="col-md-7"><select class="form-select form-select-sm sol-item-material" required>${options}</select></div><div class="col-md-3"><input type="number" min="1" class="form-control form-control-sm sol-item-qtd" placeholder="Qtd" required></div><div class="col-md-2"><button type="button" class="btn btn-outline-danger btn-sm" onclick="document.getElementById('linha-sol-${idLinha}').remove()"><i class="fa-solid fa-trash"></i></button></div></div></div>`;
-      container.insertAdjacentHTML('beforeend', html);
+
+      let optionsMateriais = '<option value="">Selecione o material...</option>';
+      db.materiais.forEach(m => {
+        optionsMateriais += `<option value="${m.id}">${m.nome} (Estoque: ${m.qtd} ${m.unidade || 'UN'})</option>`;
+      });
+
+      const qtdLinhas = container.children.length;
+      const btnRemover = qtdLinhas > 0 
+        ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerLinhaMaterialSolicitacao('${idLinha}')" title="Remover item"><i class="fa-solid fa-trash"></i></button>`
+        : '';
+
+      const htmlRow = `
+        <div class="item-solicitacao-row" id="linha-sol-${idLinha}">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-7">
+              <label class="form-label form-label-sm fw-semibold mb-1">Item #${qtdLinhas + 1}</label>
+              <select class="form-select form-select-sm sol-item-material" required>
+                ${optionsMateriais}
+              </select>
+            </div>
+            <div class="col-md-3 col-8">
+              <label class="form-label form-label-sm fw-semibold mb-1">Quantidade</label>
+              <input type="number" min="1" class="form-control form-control-sm sol-item-qtd" placeholder="1" required>
+            </div>
+            <div class="col-md-2 col-4 text-end">
+              ${btnRemover}
+            </div>
+          </div>
+        </div>
+      `;
+
+      container.insertAdjacentHTML('beforeend', htmlRow);
     }
 
-    function validarMatriculaSolicitante(mat) {
-      const u = db.usuarios.find(usr => usr.matricula.toLowerCase() === mat.trim().toLowerCase());
+    function removerLinhaMaterialSolicitacao(idLinha) {
+      const el = document.getElementById(`linha-sol-${idLinha}`);
+      if (el) el.remove();
+    }
+
+    // BUSCA NOME DO SOLICITANTE PELA MATRÍCULA
+    function validarMatriculaSolicitante(matriculaDigitada) {
+      const feedback = document.getElementById('sol-feedback-usuario');
+      const inputNome = document.getElementById('sol-nome-solicitante');
+      const matClean = (matriculaDigitada || '').trim().toLowerCase();
+      
+      if (!matClean) {
+        if (feedback) feedback.innerText = '';
+        if (inputNome) inputNome.value = '';
+        return;
+      }
+      
+      const u = db.usuarios.find(usr => usr.matricula.toLowerCase() === matClean);
       if (u) {
-        document.getElementById('sol-feedback-usuario').innerText = `✓ ${u.nome}`;
-        document.getElementById('sol-nome-solicitante').value = u.nome;
+        feedback.className = "form-text text-success fw-bold";
+        feedback.innerText = `✓ Colaborador Cadastrado (${u.setor || 'Geral'})`;
+        if (inputNome) inputNome.value = u.nome;
+      } else {
+        feedback.className = "form-text text-warning fw-bold";
+        feedback.innerText = `ℹ️ Matrícula não cadastrada no sistema. Digite seu nome completo ao lado.`;
       }
     }
 
     async function salvarSolicitacao(e) {
       e.preventDefault();
-      const linhas = document.querySelectorAll('.item-solicitacao-row');
-      let itens = [];
-      for(let l of linhas) {
-        let matId = l.querySelector('.sol-item-material').value;
-        let qtd = Number(l.querySelector('.sol-item-qtd').value);
-        let m = db.materiais.find(item => item.id === matId);
-        if(m) itens.push({ materialId: m.id, materialNome: m.nome, qtd, unidade: m.unidade||'UN' });
+      const matricula = document.getElementById('sol-matricula').value.trim();
+      const nomeSolicitanteInput = document.getElementById('sol-nome-solicitante').value.trim();
+      const obs = document.getElementById('sol-obs').value;
+
+      const usr = db.usuarios.find(u => u.matricula.toLowerCase() === matricula.toLowerCase());
+      const nomeFinal = usr ? usr.nome : (nomeSolicitanteInput || `Colaborador (${matricula})`);
+
+      const linhasMateriais = document.querySelectorAll('.item-solicitacao-row');
+      const itensSolicitados = [];
+
+      for (let linha of linhasMateriais) {
+        const matId = linha.querySelector('.sol-item-material').value;
+        const qtd = Number(linha.querySelector('.sol-item-qtd').value);
+
+        const mat = db.materiais.find(m => m.id === matId);
+        if (!mat) {
+          alert("Por favor, selecione um material em todos os campos inseridos!");
+          return;
+        }
+        if (qtd > Number(mat.qtd)) {
+          alert(`A quantidade solicitada para "${mat.nome}" (${qtd}) excede o estoque disponível (${mat.qtd})!`);
+          return;
+        }
+
+        itensSolicitados.push({
+          materialId: mat.id,
+          materialNome: mat.nome,
+          qtd: qtd,
+          unidade: mat.unidade || 'UN'
+        });
       }
-      let nova = {
+
+      if (itensSolicitados.length === 0) {
+        return alert("Adicione pelo menos um material para solicitar a retirada!");
+      }
+
+      const novaSolicitacao = {
         id: Date.now().toString(),
         data: new Date().toLocaleString('pt-BR'),
-        solicitanteNome: document.getElementById('sol-nome-solicitante').value,
-        solicitanteMatricula: document.getElementById('sol-matricula').value,
-        itens,
-        obs: document.getElementById('sol-obs').value,
+        solicitanteId: usr ? usr.id : 'visitante',
+        solicitanteNome: nomeFinal,
+        solicitanteMatricula: matricula,
+        itens: itensSolicitados,
+        obs: obs,
         status: 'Pendente'
       };
-      await salvarStore('solicitacoes', nova);
-      alert("Solicitação enviada!");
-      await carregarDadosLocal();
+
+      db.solicitacoes.unshift(novaSolicitacao);
+      await saveToStore('solicitacoes', novaSolicitacao);
+
+      alert('Solicitação enviada com sucesso! Você pode acompanhar o status em "Minhas Solicitações".');
+      e.target.reset();
+      document.getElementById('sol-feedback-usuario').innerText = '';
       carregarSelectSolicitacao();
+      renderInicio();
     }
 
+    // MINHAS SOLICITAÇÕES (VISÃO DO SOLICITANTE)
     function renderMinhasSolicitacoes() {
       const tbody = document.getElementById('tbody-minhas-solicitacoes');
+      const inputFiltroMat = document.getElementById('filtro-minha-matricula');
+      
+      if (usuarioLogado && usuarioLogado.matricula && !inputFiltroMat.value) {
+        inputFiltroMat.value = usuarioLogado.matricula;
+      }
+
+      const matBusca = (inputFiltroMat.value || '').trim().toLowerCase();
       tbody.innerHTML = '';
-      db.solicitacoes.forEach(s => {
-        let lista = (s.itens || []).map(i => `${i.materialNome}: ${i.qtd}`).join(', ');
-        tbody.innerHTML += `<tr><td>${s.data}</td><td>${s.solicitanteNome}</td><td>${lista}</td><td>${s.obs}</td><td><span class="badge bg-warning">${s.status}</span></td></tr>`;
+
+      const minhas = db.solicitacoes.filter(s => (s.solicitanteMatricula || '').toLowerCase().includes(matBusca));
+
+      if (minhas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada para a matrícula informada.</td></tr>`;
+        return;
+      }
+
+      minhas.forEach(s => {
+        let badgeStatus = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
+        if (s.status === 'Aprovado') badgeStatus = `<span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i>Aprovada</span>`;
+        if (s.status === 'Recusado') badgeStatus = `<span class="badge bg-danger"><i class="fa-solid fa-xmark-circle me-1"></i>Recusada</span>`;
+
+        let listaMateriaisHTML = '';
+        if (s.itens && Array.isArray(s.itens)) {
+          listaMateriaisHTML = s.itens.map(i => `• <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>');
+        } else {
+          listaMateriaisHTML = `• <strong>${s.materialNome || 'Material'}</strong>: ${s.qtd || 1}`;
+        }
+
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${s.data}</small></td>
+            <td><strong>${s.solicitanteNome}</strong><br><small class="text-muted">Matrícula: ${s.solicitanteMatricula}</small></td>
+            <td>${listaMateriaisHTML}</td>
+            <td><small>${s.obs}</small></td>
+            <td>${badgeStatus}</td>
+          </tr>
+        `;
       });
     }
 
+    // APROVAÇÕES (ADMINISTRADORA)
     function renderAprovacoes() {
       const tbody = document.getElementById('tbody-aprovacoes');
+      const filtro = document.getElementById('filtro-status-aprovacao').value;
       tbody.innerHTML = '';
-      db.solicitacoes.forEach(s => {
-        let lista = (s.itens || []).map(i => `${i.materialNome}: ${i.qtd}`).join(', ');
-        let btn = s.status === 'Pendente' ? `<button class="btn btn-sm btn-success" onclick="aprovar('${s.id}')">Aprovar</button>` : '-';
-        tbody.innerHTML += `<tr><td>${s.data}</td><td>${s.solicitanteNome}</td><td>${lista}</td><td>${s.obs}</td><td>${s.status}</td><td>${btn}</td></tr>`;
-      });
-    }
 
-    async function aprovar(id) {
-      let s = db.solicitacoes.find(item => item.id === id);
-      if(!s) return;
-      s.status = 'Aprovado';
-      await salvarStore('solicitacoes', s);
-      alert("Aprovado!");
-      await carregarDadosLocal();
-      renderAprovacoes();
-    }
-
-    function renderMateriais() {
-      const tbody = document.getElementById('tbody-materiais');
-      tbody.innerHTML = '';
-      db.materiais.forEach(m => {
-        tbody.innerHTML += `<tr><td>-</td><td>#${m.codigo||m.id}</td><td><strong>${m.nome}</strong></td><td>${m.tipoClassificacao||'-'}</td><td>${m.local||'-'}</td><td><span class="badge badge-ok-stock">${m.qtd}</span></td><td>${m.min}</td><td>${m.unidade||'UN'}</td><td><button class="btn btn-sm btn-outline-danger" onclick="excluirMat('${m.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-      });
-    }
-
-    function openMaterialModal() { new bootstrap.Modal(document.getElementById('modalMaterial')).show(); }
-    function openUsuarioModal() { new bootstrap.Modal(document.getElementById('modalUsuario')).show(); }
-
-    async function salvarMaterial(e) {
-      e.preventDefault();
-      let m = {
-        id: Date.now().toString(),
-        codigo: document.getElementById('mat-codigo').value,
-        nome: document.getElementById('mat-nome').value,
-        tipoClassificacao: document.getElementById('mat-tipo').value || 'Diversos',
-        local: document.getElementById('mat-local').value,
-        qtd: Number(document.getElementById('mat-qtd').value),
-        min: Number(document.getElementById('mat-min').value),
-        unidade: 'UN'
-      };
-      await salvarStore('materiais', m);
-      bootstrap.Modal.getInstance(document.getElementById('modalMaterial')).hide();
-      await carregarDadosLocal();
-      renderMateriais();
-    }
-
-    async function excluirMat(id) {
-      if(confirm("Excluir material?")) {
-        await deletarStore('materiais', id);
-        await carregarDadosLocal();
-        renderMateriais();
+      let lista = db.solicitacoes;
+      if (filtro !== 'TODOS') {
+        lista = lista.filter(s => s.status === filtro);
       }
+
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma solicitação encontrada.</td></tr>`;
+        return;
+      }
+
+      lista.forEach(s => {
+        let badgeStatus = `<span class="badge bg-warning text-dark">Pendente</span>`;
+        if (s.status === 'Aprovado') badgeStatus = `<span class="badge bg-success">Aprovada</span>`;
+        if (s.status === 'Recusado') badgeStatus = `<span class="badge bg-danger">Recusada</span>`;
+
+        let btnAcoes = '-';
+        if (s.status === 'Pendente' && usuarioLogado && usuarioLogado.perfil === 'ADMIN') {
+          btnAcoes = `
+            <button class="btn btn-sm btn-success me-1" onclick="processarAprovacao('${s.id}', true)"><i class="fa-solid fa-check me-1"></i> Aprovar</button>
+            <button class="btn btn-sm btn-danger" onclick="processarAprovacao('${s.id}', false)"><i class="fa-solid fa-xmark me-1"></i> Recusar</button>
+          `;
+        }
+
+        let listaMateriaisHTML = '';
+        if (s.itens && Array.isArray(s.itens)) {
+          listaMateriaisHTML = s.itens.map(i => `• <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>');
+        } else {
+          listaMateriaisHTML = `• <strong>${s.materialNome || 'Material'}</strong>: ${s.qtd || 1}`;
+        }
+
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${s.data}</small></td>
+            <td><strong>${s.solicitanteNome || 'Não informado'}</strong><br><small class="text-muted"><i class="fa-solid fa-id-badge me-1"></i>Matrícula: ${s.solicitanteMatricula}</small></td>
+            <td>${listaMateriaisHTML}</td>
+            <td><small>${s.obs}</small></td>
+            <td>${badgeStatus}</td>
+            <td>${btnAcoes}</td>
+          </tr>
+        `;
+      });
     }
 
+    async function processarAprovacao(idSolicitacao, aprovar) {
+      const sol = db.solicitacoes.find(s => s.id === idSolicitacao);
+      if (!sol) return;
+
+      if (aprovar) {
+        const itensParaDarBaixa = sol.itens && Array.isArray(sol.itens) 
+          ? sol.itens 
+          : [{ materialId: sol.materialId, qtd: sol.qtd }];
+
+        for (let item of itensParaDarBaixa) {
+          const mat = db.materiais.find(m => m.id === item.materialId);
+          if (!mat || Number(mat.qtd) < Number(item.qtd)) {
+            return alert(`Estoque insuficiente para o material "${item.materialNome || (mat ? mat.nome : '')}"!`);
+          }
+        }
+
+        for (let item of itensParaDarBaixa) {
+          const mat = db.materiais.find(m => m.id === item.materialId);
+          mat.qtd = Number(mat.qtd) - Number(item.qtd);
+          await saveToStore('materiais', mat);
+
+          const movData = {
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 4),
+            data: new Date().toLocaleString('pt-BR'),
+            tipo: 'SAIDA',
+            materialId: mat.id,
+            qtd: item.qtd,
+            obs: `Retirada Aprovada - Solicitante: ${sol.solicitanteNome} (${sol.solicitanteMatricula})`
+          };
+          db.movimentacoes.unshift(movData);
+          await saveToStore('movimentacoes', movData);
+        }
+
+        sol.status = 'Aprovado';
+        await saveToStore('solicitacoes', sol);
+
+        alert(`Solicitação de ${sol.solicitanteNome} aprovada com sucesso! Itens baixados do estoque.`);
+      } else {
+        sol.status = 'Recusado';
+        await saveToStore('solicitacoes', sol);
+        alert(`Solicitação recusada.`);
+      }
+
+      renderAprovacoes();
+      renderInicio();
+    }
+
+    // GESTÃO DE COLABORADORES
     function renderUsuarios() {
       const tbody = document.getElementById('tbody-usuarios');
       tbody.innerHTML = '';
+
+      if (db.usuarios.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhum colaborador cadastrado. Clique no botão acima para adicionar.</td></tr>`;
+        return;
+      }
+
       db.usuarios.forEach(u => {
-        tbody.innerHTML += `<tr><td>${u.matricula}</td><td>${u.nome}</td><td>${u.setor||'-'}</td><td>${u.perfil}</td><td>-</td></tr>`;
+        const badgePerfil = u.perfil === 'ADMIN' ? `<span class="badge bg-primary">Administradora</span>` : `<span class="badge bg-secondary">Solicitante</span>`;
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>${u.matricula}</strong></td>
+            <td>${u.nome}</td>
+            <td>${u.setor || '-'}</td>
+            <td>${badgePerfil}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-danger" onclick="excluirUsuario('${u.id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
       });
+    }
+
+    function openUsuarioModal() {
+      document.getElementById('form-usuario').reset();
+      new bootstrap.Modal(document.getElementById('modalUsuario')).show();
     }
 
     async function salvarUsuario(e) {
       e.preventDefault();
-      let u = {
+      const matricula = document.getElementById('usr-matricula').value.trim();
+      const nome = document.getElementById('usr-nome').value.trim();
+      const setor = document.getElementById('usr-setor').value.trim();
+      const perfil = document.getElementById('usr-perfil').value;
+
+      if (db.usuarios.some(u => u.matricula.toLowerCase() === matricula.toLowerCase())) {
+        return alert("Esta matrícula já está cadastrada!");
+      }
+
+      const novoUsuario = {
         id: Date.now().toString(),
-        matricula: document.getElementById('usr-matricula').value,
-        nome: document.getElementById('usr-nome').value,
-        setor: document.getElementById('usr-setor').value,
-        perfil: document.getElementById('usr-perfil').value
+        matricula,
+        nome,
+        setor,
+        perfil
       };
-      await salvarStore('usuarios', u);
+
+      db.usuarios.push(novoUsuario);
+      await saveToStore('usuarios', novoUsuario);
+
       bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
-      await carregarDadosLocal();
       renderUsuarios();
+      alert('Colaborador cadastrado com sucesso!');
     }
 
-    function renderCompras() {}
-    function renderMovimentacao() {}
+    async function excluirUsuario(id) {
+      const u = db.usuarios.find(item => item.id === id);
+      if (u && u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase()) {
+        return alert("Você não pode excluir a Matrícula Master do sistema!");
+      }
+
+      if (confirm("Deseja remover este colaborador?")) {
+        db.usuarios = db.usuarios.filter(u => u.id !== id);
+        await deleteFromStore('usuarios', id);
+        renderUsuarios();
+      }
+    }
+
+    // DASHBOARD
+    function carregarSelectDashboard() {
+      const selectMat = document.getElementById('dash-select-material');
+      const datalistDash = document.getElementById('list-materiais-dashboard');
+      const valorAnterior = selectMat.value;
+      
+      selectMat.innerHTML = '';
+      datalistDash.innerHTML = '';
+
+      if (db.materiais.length === 0) {
+        selectMat.innerHTML = '<option value="">Nenhum material cadastrado</option>';
+        return;
+      }
+
+      db.materiais.forEach(m => {
+        selectMat.innerHTML += `<option value="${m.id}">${m.nome} (Cód: ${m.codigo || m.id})</option>`;
+        datalistDash.innerHTML += `<option value="${m.nome} (Cód: ${m.codigo || m.id})"></option>`;
+      });
+
+      if (valorAnterior && db.materiais.some(m => m.id === valorAnterior)) {
+        selectMat.value = valorAnterior;
+        const matAtual = db.materiais.find(m => m.id === valorAnterior);
+        if(matAtual) {
+          document.getElementById('dash-input-search').value = `${matAtual.nome} (Cód: ${matAtual.codigo || matAtual.id})`;
+        }
+      } else if(db.materiais.length > 0) {
+        selectMat.value = db.materiais[0].id;
+        document.getElementById('dash-input-search').value = `${db.materiais[0].nome} (Cód: ${db.materiais[0].codigo || db.materiais[0].id})`;
+      }
+    }
+
+    function selecionarMaterialViaSearch(valorDigitado) {
+      const termo = valorDigitado.trim().toLowerCase();
+      const matEncontrado = db.materiais.find(m => {
+        const fullStr = `${m.nome} (cód: ${m.codigo || m.id})`.toLowerCase();
+        return fullStr === termo || m.nome.toLowerCase() === termo || (m.codigo || m.id).toLowerCase() === termo;
+      });
+
+      if (matEncontrado) {
+        document.getElementById('dash-select-material').value = matEncontrado.id;
+        renderDashboardCharts();
+      }
+    }
+
+    function renderDashboardCharts() {
+      const totalItens = db.materiais.length;
+      const totalUnidades = db.materiais.reduce((acc, m) => acc + Number(m.qtd), 0);
+      const totalAlertas = db.materiais.filter(m => Number(m.qtd) < Number(m.min)).length;
+      const totalMovs = db.movimentacoes.length;
+
+      document.getElementById('dash-kpi-total-itens').innerText = totalItens;
+      document.getElementById('dash-kpi-total-unidades').innerText = totalUnidades;
+      document.getElementById('dash-kpi-alertas').innerText = totalAlertas;
+      document.getElementById('dash-kpi-total-movs').innerText = totalMovs;
+
+      const selectMat = document.getElementById('dash-select-material');
+      const matId = selectMat.value;
+      const mat = db.materiais.find(m => m.id === matId);
+      const ctxEvolucao = document.getElementById('chartEvolucaoEstoque').getContext('2d');
+
+      if (chartEvolucaoInstance) chartEvolucaoInstance.destroy();
+
+      if (mat) {
+        const movsComEstoqueReverso = [];
+        for (let i = db.movimentacoes.length - 1; i >= 0; i--) {
+          const m = db.movimentacoes[i];
+          if (m.materialId === mat.id || m.materialId === mat.codigo || (m.materialId || '').toLowerCase() === mat.nome.toLowerCase()) {
+            movsComEstoqueReverso.unshift({ ...m });
+          }
+        }
+
+        let acumulador = Number(mat.qtd);
+        for (let m of movsComEstoqueReverso) {
+          if (m.tipo === 'ENTRADA') acumulador -= Number(m.qtd);
+          else if (m.tipo === 'SAIDA') acumulador += Number(m.qtd);
+        }
+
+        const labels = ['Saldo Inicial'];
+        const dataEvolucao = [acumulador];
+        const arrayMinimo = [Number(mat.min || 0)];
+
+        movsComEstoqueReverso.forEach(m => {
+          if (m.tipo === 'ENTRADA') acumulador += Number(m.qtd);
+          else if (m.tipo === 'SAIDA') acumulador -= Number(m.qtd);
+          labels.push(m.data ? m.data.slice(0, 10) : 'Movimento');
+          dataEvolucao.push(acumulador);
+          arrayMinimo.push(Number(mat.min || 0));
+        });
+
+        const barColors = dataEvolucao.map(valor => valor < Number(mat.min) ? 'rgba(239, 68, 68, 0.85)' : 'rgba(0, 126, 122, 0.85)');
+
+        chartEvolucaoInstance = new Chart(ctxEvolucao, {
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                type: 'bar',
+                label: `Saldo do Estoque (${mat.unidade || 'UN'})`,
+                data: dataEvolucao,
+                backgroundColor: barColors,
+                borderRadius: 5,
+                borderSkipped: false,
+                barThickness: 'flex',
+                maxBarThickness: 38
+              },
+              {
+                type: 'line',
+                label: `Mínimo (${mat.min || 0})`,
+                data: arrayMinimo,
+                borderColor: '#ef4444',
+                borderDash: [4, 4],
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: ${context.raw} ${mat.unidade || 'UN'}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+              x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            }
+          }
+        });
+      }
+
+      const ctxCategorias = document.getElementById('chartCategorias').getContext('2d');
+      if (chartCategoriasInstance) chartCategoriasInstance.destroy();
+
+      const contagemCategorias = {};
+      db.materiais.forEach(m => {
+        const cat = m.tipoClassificacao || 'DIVERSOS';
+        contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
+      });
+
+      const labelsCategorias = Object.keys(contagemCategorias);
+      const dataCategorias = Object.values(contagemCategorias);
+      const paletaCores = ['#007e7a', '#3730a3', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
+
+      chartCategoriasInstance = new Chart(ctxCategorias, {
+        type: 'doughnut',
+        data: {
+          labels: labelsCategorias,
+          datasets: [{
+            data: dataCategorias,
+            backgroundColor: paletaCores.slice(0, labelsCategorias.length),
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+        }
+      });
+
+      const ctxEntradasSaidas = document.getElementById('chartEntradasSaidas').getContext('2d');
+      if (chartEntradasSaidasInstance) chartEntradasSaidasInstance.destroy();
+
+      const totalEntradas = db.movimentacoes.filter(m => m.tipo === 'ENTRADA').reduce((acc, m) => acc + Number(m.qtd), 0);
+      const totalSaidas = db.movimentacoes.filter(m => m.tipo === 'SAIDA').reduce((acc, m) => acc + Number(m.qtd), 0);
+
+      chartEntradasSaidasInstance = new Chart(ctxEntradasSaidas, {
+        type: 'bar',
+        data: {
+          labels: ['Movimentações Totais'],
+          datasets: [
+            { label: 'Entradas', data: [totalEntradas], backgroundColor: '#10b981' },
+            { label: 'Saídas', data: [totalSaidas], backgroundColor: '#ef4444' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+          scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } }
+        }
+      });
+    }
+
+    function previewImageInput(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 300;
+            const scaleSize = MAX_WIDTH / img.width;
+            
+            if (img.width > MAX_WIDTH) {
+              canvas.width = MAX_WIDTH;
+              canvas.height = img.height * scaleSize;
+            } else {
+              canvas.width = img.width;
+              canvas.height = img.height;
+            }
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+            document.getElementById('mat-foto-base64').value = compressedBase64;
+            document.getElementById('modal-img-preview').src = compressedBase64;
+            document.getElementById('modal-img-preview-container').style.display = 'block';
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function zoomFoto(src, nome) {
+      document.getElementById('imgZoomModal').src = src;
+      document.getElementById('modalZoomTitle').innerText = nome;
+      new bootstrap.Modal(document.getElementById('modalZoomFoto')).show();
+    }
+
+    function carregarFiltroLocais() {
+      const selectLocal = document.getElementById('filtro-local-material');
+      const locaisUnicos = [...new Set(db.materiais.map(m => m.local).filter(l => l && l.trim() !== ''))];
+      selectLocal.innerHTML = '<option value="">Todos os Locais de Armazenamento</option>';
+      locaisUnicos.forEach(loc => {
+        selectLocal.innerHTML += `<option value="${loc}">${loc}</option>`;
+      });
+    }
+
+    // ORDENAÇÃO DE MATERIAIS
+    function ordenarMateriais(coluna) {
+      if (ordenacaoAtual.coluna === coluna) {
+        ordenacaoAtual.asc = !ordenacaoAtual.asc;
+      } else {
+        ordenacaoAtual.coluna = coluna;
+        ordenacaoAtual.asc = true;
+      }
+      document.querySelectorAll('.sortable-header i').forEach(icon => icon.className = 'fa-solid fa-sort ms-1');
+      const iconAtual = document.querySelector(`.id-sort-${coluna}`);
+      if (iconAtual) {
+        iconAtual.className = ordenacaoAtual.asc ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1';
+      }
+      filtrarMateriais();
+    }
+
+    function filtrarMateriais() {
+      const termoBusca = document.getElementById('filtro-nome-material').value.toLowerCase().trim();
+      const localSel = document.getElementById('filtro-local-material').value;
+
+      materiaisFiltradosAtuais = db.materiais.filter(m => {
+        const codigoStr = (m.codigo || m.id).toLowerCase();
+        const nomeStr = m.nome.toLowerCase();
+        const bateBusca = nomeStr.includes(termoBusca) || codigoStr.includes(termoBusca);
+        const bateLocal = localSel === "" || m.local === localSel;
+        return bateBusca && bateLocal;
+      });
+
+      const col = ordenacaoAtual.coluna;
+      const asc = ordenacaoAtual.asc;
+      materiaisFiltradosAtuais.sort((a, b) => {
+        let valA = a[col] !== undefined && a[col] !== null ? a[col] : '';
+        let valB = b[col] !== undefined && b[col] !== null ? b[col] : '';
+        if (typeof valA === 'number' || typeof valB === 'number') {
+          return asc ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
+        }
+        return asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+      });
+
+      paginaAtualMateriais = 1;
+      renderTabelaMateriais();
+    }
+
+    function renderMateriais() {
+      carregarFiltroLocais();
+      filtrarMateriais();
+    }
+
+    function renderTabelaMateriais() {
+      const tbody = document.getElementById('tbody-materiais');
+      tbody.innerHTML = '';
+
+      const totalItens = materiaisFiltradosAtuais.length;
+      const isAdmin = usuarioLogado && usuarioLogado.perfil === 'ADMIN';
+
+      document.querySelectorAll('.col-acoes-admin').forEach(col => {
+        if (isAdmin) col.classList.remove('d-none');
+        else col.classList.add('d-none');
+      });
+
+      if (totalItens === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-3">Nenhum material encontrado com os filtros aplicados.</td></tr>`;
+        document.getElementById('page-info-materiais').innerText = 'Exibindo 0 de 0 itens';
+        document.getElementById('btn-page-prev').disabled = true;
+        document.getElementById('btn-page-next').disabled = true;
+        return;
+      }
+
+      const totalPaginas = Math.ceil(totalItens / itensPorPaginaMateriais);
+      if (paginaAtualMateriais > totalPaginas) paginaAtualMateriais = totalPaginas;
+      if (paginaAtualMateriais < 1) paginaAtualMateriais = 1;
+
+      const inicio = (paginaAtualMateriais - 1) * itensPorPaginaMateriais;
+      const fim = Math.min(inicio + itensPorPaginaMateriais, totalItens);
+      const paginaItens = materiaisFiltradosAtuais.slice(inicio, fim);
+
+      paginaItens.forEach(m => {
+        const isCritico = Number(m.qtd) < Number(m.min);
+        const badge = isCritico ? `<span class="badge badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i>Crítico (${m.qtd})</span>` : `<span class="badge badge-ok-stock">${m.qtd}</span>`;
+        const fotoElement = m.foto ? `<img src="${m.foto}" class="img-thumbnail-preview" onclick="zoomFoto('${m.foto}', '${m.nome}')" title="Clique para ampliar">` : `<span class="text-muted"><i class="fa-solid fa-image text-secondary opacity-50 fs-4"></i></span>`;
+        
+        let tipoBadge = `<span class="badge bg-light text-dark border">${m.tipoClassificacao || 'Diversos'}</span>`;
+        if (m.tipoClassificacao === 'EPI') tipoBadge = `<span class="badge badge-epi">EPI</span>`;
+        if (m.tipoClassificacao === 'ALIMENTACAO') tipoBadge = `<span class="badge bg-warning text-dark">Alimentação</span>`;
+
+        const caTexto = (m.tipoClassificacao === 'EPI') ? `<strong>${m.ca || 'N/A'}</strong>` : `<span class="text-muted">N/A</span>`;
+        
+        let valTexto = '<span class="text-muted">N/A</span>';
+        if (m.tipoClassificacao === 'EPI' && m.validade && m.validade !== 'N/A') {
+          valTexto = new Date(m.validade + 'T00:00:00').toLocaleDateString('pt-BR');
+        }
+
+        const tdAcoesAdmin = isAdmin ? `
+          <td>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarMaterial('${m.id}')"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-sm btn-outline-danger" onclick="excluirMaterial('${m.id}')"><i class="fa-solid fa-trash"></i></button>
+          </td>` : '';
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${fotoElement}</td>
+            <td><strong>#${m.codigo || m.id}</strong></td>
+            <td><strong>${m.nome}</strong></td>
+            <td>${tipoBadge}</td>
+            <td>${m.local || '-'}</td>
+            <td>${badge}</td>
+            <td>${m.min}</td>
+            <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
+            <td>${caTexto}</td>
+            <td>${valTexto}</td>
+            ${tdAcoesAdmin}
+          </tr>
+        `;
+      });
+
+      document.getElementById('page-info-materiais').innerText = `Exibindo ${inicio + 1} a ${fim} de ${totalItens} itens (Página ${paginaAtualMateriais} de ${totalPaginas})`;
+      document.getElementById('btn-page-prev').disabled = paginaAtualMateriais === 1;
+      document.getElementById('btn-page-next').disabled = paginaAtualMateriais === totalPaginas;
+    }
+
+    function mudarPaginaMateriais(delta) {
+      paginaAtualMateriais += delta;
+      renderTabelaMateriais();
+    }
+
+    function verificarNomeDuplicado(nomeDigitado) {
+      const alertaEl = document.getElementById('alerta-nome-duplicado');
+      const idOriginal = document.getElementById('mat-id-original').value;
+      const nomeClean = nomeDigitado.trim().toLowerCase();
+
+      if (!nomeClean) {
+        alertaEl.innerText = '';
+        return;
+      }
+
+      const existe = db.materiais.some(m => m.nome.toLowerCase() === nomeClean && m.id !== idOriginal);
+      if (existe) {
+        alertaEl.innerText = `⚠️ Atenção: Já existe um material cadastrado com este nome!`;
+      } else {
+        alertaEl.innerText = '';
+      }
+    }
+
+    function buscarSugestaoCodigo(valorDigitado) {
+      const helpEl = document.getElementById('sugestao-codigo-help');
+      const termo = valorDigitado.trim().toLowerCase();
+      if (!termo) {
+        helpEl.innerText = '';
+        return;
+      }
+
+      const codigosProximos = db.materiais
+        .map(m => m.codigo || m.id)
+        .filter(cod => String(cod).toLowerCase().startsWith(termo))
+        .sort();
+
+      if (codigosProximos.length > 0) {
+        const ultimoCod = codigosProximos[codigosProximos.length - 1];
+        helpEl.innerText = `💡 Último código cadastrado com este início: ${ultimoCod}`;
+      } else {
+        helpEl.innerText = '';
+      }
+    }
+
+    function openMaterialModal(id = null) {
+      document.getElementById('mat-foto-input').value = '';
+      document.getElementById('sugestao-codigo-help').innerText = '';
+      document.getElementById('alerta-nome-duplicado').innerText = '';
+
+      if (id) {
+        const m = db.materiais.find(item => item.id === id);
+        document.getElementById('modalMaterialTitle').innerText = "Editar Material";
+        document.getElementById('mat-id-original').value = m.id;
+        document.getElementById('mat-codigo').value = m.codigo || m.id;
+        document.getElementById('mat-nome').value = m.nome;
+        document.getElementById('mat-tipo-classificacao').value = m.tipoClassificacao || 'DIVERSOS';
+        document.getElementById('mat-ca').value = m.ca || '';
+        document.getElementById('mat-validade').value = m.validade || '';
+        document.getElementById('mat-local').value = m.local || '';
+        document.getElementById('mat-unidade').value = m.unidade || 'UN';
+        document.getElementById('mat-qtd').value = m.qtd;
+        document.getElementById('mat-min').value = m.min;
+        document.getElementById('mat-foto-base64').value = m.foto || '';
+        toggleCamposEpi();
+
+        if (m.foto) {
+          document.getElementById('modal-img-preview').src = m.foto;
+          document.getElementById('modal-img-preview-container').style.display = 'block';
+        } else {
+          document.getElementById('modal-img-preview-container').style.display = 'none';
+        }
+      } else {
+        document.getElementById('modalMaterialTitle').innerText = "Cadastrar Material";
+        document.getElementById('form-material').reset();
+        document.getElementById('mat-id-original').value = '';
+        document.getElementById('mat-codigo').value = '';
+        document.getElementById('mat-tipo-classificacao').value = 'DIVERSOS';
+        document.getElementById('mat-foto-base64').value = '';
+        document.getElementById('modal-img-preview-container').style.display = 'none';
+        toggleCamposEpi();
+      }
+      new bootstrap.Modal(document.getElementById('modalMaterial')).show();
+    }
+
+    async function salvarMaterial(e) {
+      e.preventDefault();
+      const idOriginal = document.getElementById('mat-id-original').value;
+      const novoCodigo = document.getElementById('mat-codigo').value.trim();
+      const novoNome = document.getElementById('mat-nome').value.trim();
+      const tipoClassificacao = document.getElementById('mat-tipo-classificacao').value;
+
+      if (!idOriginal) {
+        const codigoExiste = db.materiais.some(m => (m.codigo || m.id).toLowerCase() === novoCodigo.toLowerCase());
+        if (codigoExiste) {
+          alert(`O código "${novoCodigo}" já está cadastrado em outro material! Informe um código único.`);
+          document.getElementById('mat-codigo').focus();
+          return;
+        }
+      }
+
+      const matData = {
+        id: idOriginal || novoCodigo,
+        codigo: novoCodigo,
+        nome: novoNome,
+        tipoClassificacao: tipoClassificacao,
+        ca: tipoClassificacao === 'EPI' ? document.getElementById('mat-ca').value : 'N/A',
+        validade: tipoClassificacao === 'EPI' ? document.getElementById('mat-validade').value : 'N/A',
+        local: document.getElementById('mat-local').value,
+        unidade: document.getElementById('mat-unidade').value,
+        qtd: Number(document.getElementById('mat-qtd').value),
+        min: Number(document.getElementById('mat-min').value),
+        foto: document.getElementById('mat-foto-base64').value
+      };
+
+      if (idOriginal) {
+        const index = db.materiais.findIndex(m => m.id === idOriginal);
+        db.materiais[index] = matData;
+      } else {
+        db.materiais.push(matData);
+      }
+
+      await saveToStore('materiais', matData);
+      bootstrap.Modal.getInstance(document.getElementById('modalMaterial')).hide();
+      renderMateriais();
+      renderInicio();
+    }
+
+    function editarMaterial(id) {
+      openMaterialModal(id);
+    }
+
+    async function excluirMaterial(id) {
+      if (confirm("Tem certeza que deseja excluir este material?")) {
+        db.materiais = db.materiais.filter(m => m.id !== id);
+        await deleteFromStore('materiais', id);
+        renderMateriais();
+        renderInicio();
+      }
+    }
+
+    // COMPRAS
+    function renderCompras() {
+      const tbody = document.getElementById('tbody-compras');
+      tbody.innerHTML = '';
+
+      db.compras.forEach(c => {
+        const mat = db.materiais.find(m => m.id === c.materialId || m.codigo === c.materialId);
+        const statusBadge = c.status === 'Pendente' ? `<span class="badge bg-warning text-dark">Pendente</span>` : `<span class="badge bg-success">Recebido</span>`;
+        
+        let btnAcao = c.status === 'Pendente' 
+          ? `<button class="btn btn-sm btn-success me-1" onclick="receberCompra('${c.id}')"><i class="fa-solid fa-box-open me-1"></i> Receber</button>
+             <button class="btn btn-sm btn-outline-danger" onclick="excluirCompra('${c.id}')" title="Excluir Ordem"><i class="fa-solid fa-trash"></i></button>`
+          : `<button class="btn btn-sm btn-secondary" disabled>Concluído</button>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.data}</td>
+            <td>${mat ? mat.nome : 'N/A'}</td>
+            <td>${c.qtd} ${mat ? (mat.unidade || 'UN') : ''}</td>
+            <td>${statusBadge}</td>
+            <td>${btnAcao}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function openCompraModal() {
+      const selectMat = document.getElementById('comp-material-id');
+      selectMat.innerHTML = '';
+      db.materiais.forEach(m => selectMat.innerHTML += `<option value="${m.id}">${m.nome} (${m.unidade || 'UN'})</option>`);
+      new bootstrap.Modal(document.getElementById('modalCompra')).show();
+    }
+
+    async function salvarCompra(e) {
+      e.preventDefault();
+      const matId = document.getElementById('comp-material-id').value;
+      const qtd = Number(document.getElementById('comp-quantidade').value);
+
+      const novaOrdem = {
+        id: Date.now().toString(),
+        data: new Date().toISOString().slice(0, 10),
+        materialId: matId,
+        qtd: qtd,
+        status: 'Pendente'
+      };
+
+      db.compras.push(novaOrdem);
+      await saveToStore('compras', novaOrdem);
+      bootstrap.Modal.getInstance(document.getElementById('modalCompra')).hide();
+      renderCompras();
+      renderInicio();
+    }
+
+    async function receberCompra(compraId) {
+      const compra = db.compras.find(c => c.id === compraId);
+      if (!compra) return;
+
+      if (confirm("Confirmar o recebimento desta ordem de compra? O estoque do material será atualizado automaticamente.")) {
+        compra.status = 'Concluído';
+        await saveToStore('compras', compra);
+
+        const mat = db.materiais.find(m => m.id === compra.materialId || m.codigo === compra.materialId);
+        if (mat) {
+          mat.qtd = Number(mat.qtd) + Number(compra.qtd);
+          await saveToStore('materiais', mat);
+        }
+
+        const movData = {
+          id: Date.now().toString(),
+          data: new Date().toLocaleString('pt-BR'),
+          tipo: 'ENTRADA',
+          materialId: mat ? mat.id : compra.materialId,
+          qtd: compra.qtd,
+          obs: `Recebimento Ordem Compra #${compra.id}`
+        };
+
+        db.movimentacoes.unshift(movData);
+        await saveToStore('movimentacoes', movData);
+
+        renderCompras();
+        renderInicio();
+      }
+    }
+
+    async function excluirCompra(compraId) {
+      if (confirm("Deseja realmente excluir esta ordem de compra lançada por engano?")) {
+        db.compras = db.compras.filter(c => c.id !== compraId);
+        await deleteFromStore('compras', compraId);
+        renderCompras();
+        renderInicio();
+      }
+    }
+
+    // MOVIMENTAÇÕES
+    function parseDataPtBr(dataStr) {
+      if (!dataStr) return 0;
+      if (dataStr.includes('-')) {
+        return new Date(dataStr).getTime();
+      }
+      const partes = dataStr.split(',');
+      const dataPartes = partes[0].trim().split('/');
+      if (dataPartes.length === 3) {
+        const dia = dataPartes[0].padStart(2, '0');
+        const mes = dataPartes[1].padStart(2, '0');
+        const ano = dataPartes[2];
+        const horaStr = partes[1] ? partes[1].trim() : '00:00:00';
+        return new Date(`${ano}-${mes}-${dia}T${horaStr}`).getTime() || 0;
+      }
+      return 0;
+    }
+
+    function renderMovimentacao() {
+      const datalist = document.getElementById('list-materiais-movimentacao');
+      datalist.innerHTML = '';
+      db.materiais.forEach(m => {
+        datalist.innerHTML += `<option value="${m.nome}">Disponível: ${m.qtd} ${m.unidade || 'UN'}</option>`;
+      });
+
+      const termoHist = (document.getElementById('filtro-historico-mov')?.value || '').toLowerCase().trim();
+
+      const movimentacoesOrdenadas = [...db.movimentacoes].sort((a, b) => {
+        const timeA = parseDataPtBr(a.data) || Number(a.id) || 0;
+        const timeB = parseDataPtBr(b.data) || Number(b.id) || 0;
+        return timeB - timeA;
+      });
+
+      const tbody = document.getElementById('tbody-movimentacoes');
+      tbody.innerHTML = '';
+
+      const filtradas = movimentacoesOrdenadas.filter(m => {
+        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
+        const nomeMat = mat ? mat.nome.toLowerCase() : 'material excluído';
+        const obsText = (m.obs || '').toLowerCase();
+        return nomeMat.includes(termoHist) || obsText.includes(termoHist);
+      });
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma movimentação encontrada.</td></tr>`;
+        return;
+      }
+
+      filtradas.forEach(m => {
+        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
+        const badgeTipo = m.tipo === 'ENTRADA' ? `<span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i>Entrada</span>` : `<span class="badge bg-danger"><i class="fa-solid fa-arrow-up me-1"></i>Saída</span>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td><small>${m.data}</small></td>
+            <td>${badgeTipo}</td>
+            <td>${mat ? mat.nome : 'Material Excluído'}</td>
+            <td><strong>${m.qtd} ${mat ? (mat.unidade || 'UN') : ''}</strong></td>
+            <td><small class="text-muted">${m.obs || '-'}</small></td>
+          </tr>
+        `;
+      });
+    }
+
+    async function salvarMovimentacaoComTipo(tipo) {
+      const nomeInput = document.getElementById('mov-material-input').value.trim();
+      const qtdInput = document.getElementById('mov-quantidade');
+      const qtd = Number(qtdInput.value);
+      const obs = document.getElementById('mov-obs').value;
+
+      if (!nomeInput) {
+        alert("Digite o nome de um material.");
+        document.getElementById('mov-material-input').focus();
+        return;
+      }
+
+      const mat = db.materiais.find(m => m.nome.toLowerCase() === nomeInput.toLowerCase());
+
+      if (!mat) {
+        alert("Material não encontrado! Digite o nome de um material cadastrado.");
+        return;
+      }
+
+      if (!qtd || qtd <= 0) {
+        alert("Informe uma quantidade válida maior que zero.");
+        qtdInput.focus();
+        return;
+      }
+
+      if (tipo === 'SAIDA' && Number(mat.qtd) < qtd) {
+        alert("Quantidade em estoque insuficiente para realizar esta saída!");
+        return;
+      }
+
+      if (tipo === 'ENTRADA') {
+        mat.qtd = Number(mat.qtd) + qtd;
+      } else {
+        mat.qtd = Number(mat.qtd) - qtd;
+      }
+
+      await saveToStore('materiais', mat);
+
+      const movData = {
+        id: Date.now().toString(),
+        data: new Date().toLocaleString('pt-BR'),
+        tipo: tipo,
+        materialId: mat.id,
+        qtd: qtd,
+        obs: obs
+      };
+
+      db.movimentacoes.unshift(movData);
+      await saveToStore('movimentacoes', movData);
+
+      document.getElementById('mov-material-input').value = '';
+      document.getElementById('mov-quantidade').value = '';
+      document.getElementById('mov-obs').value = '';
+
+      renderMovimentacao();
+      renderInicio();
+      alert(`Movimentação de ${tipo} registrada com sucesso para: ${mat.nome}!`);
+    }
+
+    // BACKUP E EXCEL
+    function exportarExcelEstoque() {
+      if (!db.materiais || db.materiais.length === 0) {
+        alert("Não há materiais cadastrados para exportar.");
+        return;
+      }
+
+      const dadosExcel = db.materiais.map(m => ({
+        "Código": m.codigo || m.id,
+        "Nome do Material": m.nome,
+        "Tipo": m.tipoClassificacao || "DIVERSOS",
+        "Local de Armazenamento": m.local || "-",
+        "Qtd. Atual": m.qtd,
+        "Qtd. Mínima": m.min,
+        "Unidade de Medida": m.unidade || "UN",
+        "CA": m.ca || "N/A",
+        "Validade": m.validade || "N/A"
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Estoque Atual");
+      
+      const dataAtual = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(workbook, `Estoque_Atual_CPT_${dataAtual}.xlsx`);
+    }
 
     function exportarBackup() {
-      let blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
-      let a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `backup_cpt.json`;
+      const jsonString = JSON.stringify(db, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_gestao_cpt_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
-    async function importarBackup() {
-      let input = document.getElementById('file-import');
-      if(!input.files.length) return alert("Selecione o arquivo.");
-      let reader = new FileReader();
+    function importarBackup() {
+      const fileInput = document.getElementById('file-import');
+      if (!fileInput.files.length) {
+        alert("Selecione um arquivo de backup (.json) primeiro.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      
       reader.onload = async function(e) {
-        let json = JSON.parse(e.target.result);
-        if(json.materiais) for(let m of json.materiais) await salvarStore('materiais', m);
-        if(json.usuarios) for(let u of json.usuarios) await salvarStore('usuarios', u);
-        if(json.solicitacoes) for(let s of json.solicitacoes) await salvarStore('solicitacoes', s);
-        alert("Backup restaurado localmente com sucesso!");
-        await carregarDadosLocal();
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (importedData.materiais) {
+            await clearStore('config');
+            await clearStore('materiais');
+            await clearStore('compras');
+            await clearStore('movimentacoes');
+            await clearStore('usuarios');
+            await clearStore('solicitacoes');
+
+            if (importedData.config) await saveToStore('config', { id: 'main', ...importedData.config });
+            if (importedData.materiais) { for (const item of importedData.materiais) await saveToStore('materiais', item); }
+            if (importedData.compras) { for (const item of importedData.compras) await saveToStore('compras', item); }
+            if (importedData.movimentacoes) { for (const item of importedData.movimentacoes) await saveToStore('movimentacoes', item); }
+            if (importedData.usuarios) { for (const item of importedData.usuarios) await saveToStore('usuarios', item); }
+            if (importedData.solicitacoes) { for (const item of importedData.solicitacoes) await saveToStore('solicitacoes', item); }
+
+            alert("Backup restaurado com sucesso!");
+            location.reload();
+          } else {
+            alert("O arquivo fornecido é inválido ou incompatível.");
+          }
+        } catch (err) {
+          alert("Erro ao ler o arquivo JSON de backup.");
+        }
       };
-      reader.readAsText(input.files[0]);
+      reader.readAsText(file);
     }
   </script>
 </body>
 </html>
+
+
