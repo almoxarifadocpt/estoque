@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <!-- Microsoft Authentication Library (MSAL for JS) -->
@@ -21,6 +21,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- SheetJS (xlsx) para exportação de Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- Supabase SDK para sincronização em Nuvem -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
     :root {
@@ -175,91 +178,37 @@
       padding: 10px 12px !important;
     }
 
-    .kpi-card-compact.warning {
-      border-left-color: #ef4444;
-    }
+    .kpi-card-compact.warning { border-left-color: #ef4444; }
+    .kpi-card-compact.info { border-left-color: #EEA722; }
+    .kpi-card-compact.success { border-left-color: #10b981; }
 
-    .kpi-card-compact.info {
-      border-left-color: #EEA722;
-    }
+    .kpi-icon-compact { font-size: 1.4rem; opacity: 0.35; }
 
-    .kpi-card-compact.success {
-      border-left-color: #10b981;
-    }
-
-    .kpi-icon-compact {
-      font-size: 1.4rem;
-      opacity: 0.35;
-    }
-
-    .badge-low-stock {
-      background-color: #fee2e2;
-      color: #991b1b;
-      font-weight: 600;
-    }
-
-    .badge-ok-stock {
-      background-color: #e0f2f1;
-      color: #004d4a;
-      font-weight: 600;
-    }
-
-    .badge-epi {
-      background-color: #e0e7ff;
-      color: #3730a3;
-      font-weight: 600;
-    }
+    .badge-low-stock { background-color: #fee2e2; color: #991b1b; font-weight: 600; }
+    .badge-ok-stock { background-color: #e0f2f1; color: #004d4a; font-weight: 600; }
+    .badge-epi { background-color: #e0e7ff; color: #3730a3; font-weight: 600; }
 
     .img-thumbnail-preview {
-      width: 40px;
-      height: 40px;
-      object-fit: cover;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: transform 0.2s;
+      width: 40px; height: 40px;
+      object-fit: cover; border-radius: 6px;
+      cursor: pointer; transition: transform 0.2s;
     }
 
-    .img-thumbnail-preview:hover {
-      transform: scale(1.1);
-    }
+    .img-thumbnail-preview:hover { transform: scale(1.1); }
 
-    .logo-container {
-      position: relative;
-      display: inline-block;
-    }
-
-    .logo-img-custom {
-      max-height: 50px;
-      max-width: 180px;
-      object-fit: contain;
-      cursor: pointer;
-    }
+    .logo-container { position: relative; display: inline-block; }
+    .logo-img-custom { max-height: 50px; max-width: 180px; object-fit: contain; cursor: pointer; }
 
     .logo-overlay-icon {
-      position: absolute;
-      bottom: -5px;
-      right: -5px;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      border-radius: 50%;
-      padding: 3px 6px;
-      font-size: 0.65rem;
-      cursor: pointer;
-      display: none;
+      position: absolute; bottom: -5px; right: -5px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      border-radius: 50%; padding: 3px 6px;
+      font-size: 0.65rem; cursor: pointer; display: none;
     }
 
-    .logo-container:hover .logo-overlay-icon {
-      display: block;
-    }
-
-    .sortable-header {
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .sortable-header:hover {
-      background-color: #e2e8f0;
-    }
+    .logo-container:hover .logo-overlay-icon { display: block; }
+    .sortable-header { cursor: pointer; user-select: none; }
+    .sortable-header:hover { background-color: #e2e8f0; }
 
     .item-solicitacao-row {
       background-color: #f8fafc;
@@ -270,18 +219,10 @@
     }
 
     @media (max-width: 768px) {
-      #sidebar {
-        margin-left: -250px;
-      }
-      #sidebar.active {
-        margin-left: 0;
-      }
-      #content {
-        margin-left: 0;
-      }
-      #content.active {
-        margin-left: 250px;
-      }
+      #sidebar { margin-left: -250px; }
+      #sidebar.active { margin-left: 0; }
+      #content { margin-left: 0; }
+      #content.active { margin-left: 250px; }
     }
   </style>
 </head>
@@ -295,7 +236,7 @@
       </div>
     </div>
     
-    <!-- Identificação por Matrícula na Barra Lateral -->
+    <!-- Identificação por Matrícula -->
     <div class="p-2 border-bottom border-secondary bg-dark bg-opacity-25">
       <small class="text-light opacity-75 d-block mb-1" style="font-size: 0.72rem;"><i class="fa-solid fa-id-card me-1"></i>IDENTIFICAÇÃO DE ACESSO:</small>
       <div class="input-group input-group-sm">
@@ -324,7 +265,6 @@
       <li class="menu-admin">
         <a href="#" onclick="showSection('aprovacoes')"><i class="fa-solid fa-clipboard-check"></i> Aprovações <span id="badge-count-aprovacoes" class="badge bg-danger ms-auto d-none">0</span></a>
       </li>
-      <!-- MENU RESTRITO EXCLUSIVAMENTE PARA A SUA MATRÍCULA -->
       <li id="menu-colaboradores-master" class="d-none">
         <a href="#" onclick="showSection('usuarios')"><i class="fa-solid fa-users"></i> Colaboradores</a>
       </li>
@@ -339,7 +279,6 @@
       </li>
     </ul>
 
-    <!-- Rodapé da Sidebar (Texto CPT Estoque em cor BRANCA) -->
     <div class="sidebar-footer">
       <div class="text-center text-light mb-2 opacity-75 fw-semibold" style="font-size: 0.72rem;">
         <i class="fa-solid fa-mobile-screen-button me-1"></i> INSTALAR APP MOBILE
@@ -350,7 +289,7 @@
         </a>
       </div>
       <div class="text-center text-white border-top border-secondary pt-2" style="font-size: 0.72rem;">
-        <span class="text-white fw-bold">CPT Estoque • <strong class="text-white">v1.5.0</strong></span>
+        <span class="text-white fw-bold">CPT Estoque • <strong class="text-white">v1.5.0 (Nuvem)</strong></span>
       </div>
     </div>
   </nav>
@@ -440,8 +379,7 @@
                 <th>Pedido de Compra</th>
               </tr>
             </thead>
-            <tbody id="tbody-alertas-inicio">
-            </tbody>
+            <tbody id="tbody-alertas-inicio"></tbody>
           </table>
         </div>
       </div>
@@ -525,7 +463,7 @@
       </div>
     </div>
 
-    <!-- SEÇÃO: SOLICITAR RETIRADA (MULTI-ITENS) -->
+    <!-- SEÇÃO: SOLICITAR RETIRADA -->
     <div id="sec-solicitacao" class="app-section d-none">
       <div class="row justify-content-center">
         <div class="col-md-9">
@@ -535,7 +473,6 @@
             </div>
             <div class="card-body">
               <form id="form-solicitacao" onsubmit="salvarSolicitacao(event)">
-                
                 <div class="row">
                   <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Sua Matrícula *</label>
@@ -548,15 +485,12 @@
                 </div>
                 <div id="sol-feedback-usuario" class="form-text fw-bold mb-3"></div>
 
-                <!-- ÁREA DE MATERIAIS MULTI-ITENS -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <label class="form-label fw-bold m-0"><i class="fa-solid fa-boxes-stacked me-1 text-primary"></i> Materiais a Retirar *</label>
                   <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="adicionarLinhaMaterialSolicitacao()"><i class="fa-solid fa-plus me-1"></i> Adicionar Outro Material</button>
                 </div>
 
-                <div id="container-itens-solicitacao">
-                  <!-- Linhas dinâmicas de materiais adicionadas via JS -->
-                </div>
+                <div id="container-itens-solicitacao"></div>
 
                 <div class="mb-3 mt-3">
                   <label class="form-label fw-bold">Justificativa / Setor de Aplicação *</label>
@@ -573,7 +507,7 @@
       </div>
     </div>
 
-    <!-- SEÇÃO: MINHAS SOLICITAÇÕES (ACOMPANHAR STATUS PENDENTE/APROVADO/RECUSADO) -->
+    <!-- SEÇÃO: MINHAS SOLICITAÇÕES -->
     <div id="sec-minhas-solicitacoes" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Acompanhamento dos Meus Pedidos</h3>
@@ -606,8 +540,7 @@
                 <th>Status da Solicitação</th>
               </tr>
             </thead>
-            <tbody id="tbody-minhas-solicitacoes">
-            </tbody>
+            <tbody id="tbody-minhas-solicitacoes"></tbody>
           </table>
         </div>
       </div>
@@ -638,14 +571,13 @@
                 <th>Ações (Administradora)</th>
               </tr>
             </thead>
-            <tbody id="tbody-aprovacoes">
-            </tbody>
+            <tbody id="tbody-aprovacoes"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- SEÇÃO: COLABORADORES (RESTRITA EXCLUSIVAMENTE À SUA MATRÍCULA) -->
+    <!-- SEÇÃO: COLABORADORES -->
     <div id="sec-usuarios" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Cadastro de Colaboradores e Administradores</h3>
@@ -664,14 +596,13 @@
                 <th>Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-usuarios">
-            </tbody>
+            <tbody id="tbody-usuarios"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- SEÇÃO: MATERIAIS (ESTOQUE) -->
+    <!-- SEÇÃO: MATERIAIS -->
     <div id="sec-materiais" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Consulta de Estoque e Materiais</h3>
@@ -687,8 +618,7 @@
             </div>
           </div>
           <div class="col-md-5">
-            <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()">
-            </select>
+            <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()"></select>
           </div>
         </div>
       </div>
@@ -711,11 +641,9 @@
                 <th class="col-acoes-admin d-none">Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-materiais">
-            </tbody>
+            <tbody id="tbody-materiais"></tbody>
           </table>
         </div>
-        <!-- CONTROLES DE PAGINAÇÃO -->
         <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
           <small class="text-muted" id="page-info-materiais">Exibindo 0 de 0 itens</small>
           <div class="btn-group btn-group-sm">
@@ -745,8 +673,7 @@
                 <th>Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-compras">
-            </tbody>
+            <tbody id="tbody-compras"></tbody>
           </table>
         </div>
       </div>
@@ -811,8 +738,7 @@
                     <th>Obs.</th>
                   </tr>
                 </thead>
-                <tbody id="tbody-movimentacoes">
-                </tbody>
+                <tbody id="tbody-movimentacoes"></tbody>
               </table>
             </div>
           </div>
@@ -820,14 +746,14 @@
       </div>
     </div>
 
-    <!-- SEÇÃO: BACKUP E DADOS -->
+    <!-- SEÇÃO: BACKUP -->
     <div id="sec-backup" class="app-section d-none">
       <h3 class="mb-3">Backup e Gestão do Banco de Dados</h3>
       <div class="row g-3">
         <div class="col-md-4">
           <div class="card p-3 h-100">
             <h5><i class="fa-solid fa-file-excel text-success me-2"></i> Exportar para Excel</h5>
-            <p class="text-muted small">Exporte a planilha completa do seu estoque atual (.xlsx) pronta para impressão ou relatórios.</p>
+            <p class="text-muted small">Exporte a planilha completa do seu estoque atual (.xlsx).</p>
             <button class="btn btn-success btn-sm mt-auto" onclick="exportarExcelEstoque()"><i class="fa-solid fa-file-excel me-1"></i> Baixar Planilha Excel</button>
           </div>
         </div>
@@ -835,7 +761,7 @@
         <div class="col-md-4">
           <div class="card p-3 h-100">
             <h5><i class="fa-solid fa-download text-primary me-2"></i> Exportar Backup JSON</h5>
-            <p class="text-muted small">Faça o download de todos os seus dados em formato JSON seguro para backup integral do sistema.</p>
+            <p class="text-muted small">Faça o download dos seus dados em formato JSON seguro.</p>
             <button class="btn btn-primary btn-sm mt-auto" onclick="exportarBackup()"><i class="fa-solid fa-file-export me-1"></i> Baixar Arquivo JSON</button>
           </div>
         </div>
@@ -843,7 +769,7 @@
         <div class="col-md-4">
           <div class="card p-3 h-100">
             <h5><i class="fa-solid fa-upload text-warning me-2"></i> Importar Backup</h5>
-            <p class="text-muted small">Restaure as informações do sistema a partir de um arquivo JSON anteriormente baixado.</p>
+            <p class="text-muted small">Restaure as informações a partir de um arquivo JSON.</p>
             <input type="file" id="file-import" class="form-control form-control-sm mb-2" accept=".json">
             <button class="btn btn-warning btn-sm mt-auto" onclick="importarBackup()"><i class="fa-solid fa-file-import me-1"></i> Restaurar Dados</button>
           </div>
@@ -854,13 +780,11 @@
   </div>
 
   <!-- MODAIS -->
-
-  <!-- Modal Colaborador / Usuário -->
   <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalUsuarioTitle">Cadastrar Colaborador</h5>
+          <h5 class="modal-title">Cadastrar Colaborador</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <form id="form-usuario" onsubmit="salvarUsuario(event)">
@@ -895,7 +819,6 @@
     </div>
   </div>
 
-  <!-- Modal Material -->
   <div class="modal fade" id="modalMaterial" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -996,7 +919,6 @@
     </div>
   </div>
 
-  <!-- Modal Zoom Foto -->
   <div class="modal fade" id="modalZoomFoto" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -1011,7 +933,6 @@
     </div>
   </div>
 
-  <!-- Modal Compra -->
   <div class="modal fade" id="modalCompra" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -1023,8 +944,7 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Material</label>
-              <select class="form-select" id="comp-material-id" required>
-              </select>
+              <select class="form-select" id="comp-material-id" required></select>
             </div>
             <div class="mb-3">
               <label class="form-label">Quantidade</label>
@@ -1044,8 +964,13 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // CONFIGURAÇÃO DE MATRÍCULA MASTER (DIGITE A SUA MATRÍCULA REAL AQUI)
-    const MATRICULA_MASTER = 'c0676996';'81011679'
+    // Configurações de Conexão com o Supabase (Estoque CPT)
+    const SUPABASE_URL = 'https://tjukiulmiuvmmgkscvty.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqdWtpdWxtaXV2bW1na3NjdnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5NzE0NjEsImV4cCI6MjA1ODU0NzQ2MX0.9G4P_iUaP0N3P4k8L-c03R7G6_k_qXGzY8kG6_k_qXG';
+
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const MATRICULA_MASTER = 'CPT-1020';
 
     let db = {
       config: { logo: "", sidebarIcon: "" },
@@ -1063,93 +988,68 @@
     let chartCategoriasInstance = null;
     let chartEntradasSaidasInstance = null;
 
-    let idb = null;
-    const DB_NAME = 'gestao_estoque_cpt_idb';
-    const DB_VERSION = 2;
-
     let ordenacaoAtual = { coluna: 'nome', asc: true };
-
     let paginaAtualMateriais = 1;
     const itensPorPaginaMateriais = 10;
     let materiaisFiltradosAtuais = [];
 
-    // INDEXEDDB
-    function initDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (e) => {
-          const dbRef = e.target.result;
-          if (!dbRef.objectStoreNames.contains('config')) dbRef.createObjectStore('config', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('materiais')) dbRef.createObjectStore('materiais', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('compras')) dbRef.createObjectStore('compras', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('movimentacoes')) dbRef.createObjectStore('movimentacoes', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('usuarios')) dbRef.createObjectStore('usuarios', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('solicitacoes')) dbRef.createObjectStore('solicitacoes', { keyPath: 'id' });
-        };
-        request.onsuccess = (e) => {
-          idb = e.target.result;
-          resolve(idb);
-        };
-        request.onerror = (e) => {
-          console.error("Erro ao abrir IndexedDB", e);
-          reject(e);
-        };
-      });
-    }
-
-    function getAllFromStore(storeName) {
-      return new Promise((resolve) => {
-        const tx = idb.transaction(storeName, 'readonly');
-        const store = tx.objectStore(storeName);
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => resolve([]);
-      });
-    }
-
-    function saveToStore(storeName, item) {
-      return new Promise((resolve, reject) => {
-        const tx = idb.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        const req = store.put(item);
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-
-    function deleteFromStore(storeName, id) {
-      return new Promise((resolve, reject) => {
-        const tx = idb.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        const req = store.delete(id);
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-
-    function clearStore(storeName) {
-      return new Promise((resolve, reject) => {
-        const tx = idb.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        const req = store.clear();
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-
+    // CARREGAR DADOS DO SUPABASE
     async function carregarDados() {
-      await initDB();
-      
-      const configArr = await getAllFromStore('config');
-      const mainConfig = configArr.find(c => c.id === 'main');
-      db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebarIcon || "" } : { logo: "", sidebarIcon: "" };
-      
-      db.materiais = await getAllFromStore('materiais');
-      db.compras = await getAllFromStore('compras');
-      db.movimentacoes = await getAllFromStore('movimentacoes');
-      db.usuarios = await getAllFromStore('usuarios');
-      db.solicitacoes = await getAllFromStore('solicitacoes');
+      // 1. Config
+      const { data: configArr } = await _supabase.from('config').select('*');
+      const mainConfig = configArr ? configArr.find(c => c.id === 'main') : null;
+      db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebar_icon || "" } : { logo: "", sidebarIcon: "" };
 
+      // 2. Materiais
+      const { data: matData } = await _supabase.from('materiais').select('*');
+      if(matData) {
+        db.materiais = matData.map(m => ({
+          id: m.id,
+          codigo: m.codigo,
+          nome: m.nome,
+          tipoClassificacao: m.tipo_classificacao,
+          ca: m.ca,
+          validade: m.validade,
+          local: m.local,
+          unidade: m.unidade,
+          qtd: parseFloat(m.qtd || 0),
+          min: parseFloat(m.min || 0),
+          foto: m.foto
+        }));
+      }
+
+      // 3. Compras
+      const { data: compData } = await _supabase.from('compras').select('*');
+      if(compData) {
+        db.compras = compData.map(c => ({
+          id: c.id,
+          data: c.data,
+          materialId: c.material_id,
+          qtd: parseFloat(c.qtd),
+          status: c.status
+        }));
+      }
+
+      // 4. Movimentações
+      const { data: movData } = await _supabase.from('movimentacoes').select('*');
+      if(movData) {
+        db.movimentacoes = movData.map(m => ({
+          id: m.id,
+          data: m.data,
+          tipo: m.tipo,
+          materialId: m.material_id,
+          qtd: parseFloat(m.qtd),
+          obs: m.obs
+        }));
+      }
+
+      // 5. Usuários
+      const { data: usrData } = await _supabase.from('usuarios').select('*');
+      if(usrData) {
+        db.usuarios = usrData;
+      }
+
+      // Garante usuário master
       if (!db.usuarios.some(u => u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase())) {
         const masterUsr = {
           id: 'usr_master',
@@ -1159,7 +1059,22 @@
           perfil: 'ADMIN'
         };
         db.usuarios.push(masterUsr);
-        await saveToStore('usuarios', masterUsr);
+        await _supabase.from('usuarios').insert([masterUsr]);
+      }
+
+      // 6. Solicitações
+      const { data: solData } = await _supabase.from('solicitacoes').select('*');
+      if(solData) {
+        db.solicitacoes = solData.map(s => ({
+          id: s.id,
+          data: s.data,
+          solicitanteId: s.solicitante_id,
+          solicitanteNome: s.solicitante_nome,
+          solicitanteMatricula: s.solicitante_matricula,
+          itens: s.itens,
+          obs: s.obs,
+          status: s.status
+        }));
       }
     }
 
@@ -1183,55 +1098,17 @@
         e.preventDefault();
         deferredPrompt = e;
       });
-
-      const manifest = {
-        name: "Gestão de Estoque CPT",
-        short_name: "Estoque CPT",
-        start_url: "./index.html",
-        display: "standalone",
-        background_color: "#f8fafc",
-        theme_color: "#007e7a",
-        icons: [{
-          src: "https://cdn-icons-png.flaticon.com/512/2897/2897785.png",
-          sizes: "512x512",
-          type: "image/png"
-        }]
-      };
-      const stringManifest = JSON.stringify(manifest);
-      const blobManifest = new Blob([stringManifest], {type: 'application/json'});
-      const manifestURL = URL.createObjectURL(blobManifest);
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = manifestURL;
-      document.head.appendChild(link);
-
-      if ('serviceWorker' in navigator) {
-        const swCode = `
-          self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-          self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-          self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
-        `;
-        const blobSW = new Blob([swCode], {type: 'text/javascript'});
-        const swURL = URL.createObjectURL(blobSW);
-        navigator.serviceWorker.register(swURL).catch(() => {});
-      }
     }
 
     function instalarPWA() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('App instalado com sucesso!');
-          }
-          deferredPrompt = null;
-        });
+        deferredPrompt = null;
       } else {
         alert("Para instalar no celular:\n\nAndroid (Chrome): Abra o menu do navegador e toque em 'Adicionar à Tela Inicial'.\n\niOS (Safari): Toque em 'Compartilhar' e escolha 'Adicionar à Tela de Início'.");
       }
     }
 
-    // AUTENTICAÇÃO POR MATRÍCULA
     function autenticarPorMatricula(matricula) {
       const matClean = (matricula || '').trim().toLowerCase();
       const infoDiv = document.getElementById('sessao-user-info');
@@ -1275,11 +1152,8 @@
         else btnNovoMaterial.classList.add('d-none');
       }
 
-      if (!isAdmin) {
-        showSection('solicitacao');
-      } else {
-        showSection('inicio');
-      }
+      if (!isAdmin) showSection('solicitacao');
+      else showSection('inicio');
     }
 
     async function alterarLogoSistema(input) {
@@ -1288,7 +1162,7 @@
         reader.onload = async function(e) {
           if(!db.config) db.config = {};
           db.config.logo = e.target.result;
-          await saveToStore('config', { id: 'main', logo: db.config.logo, sidebarIcon: db.config.sidebarIcon || "" });
+          await _supabase.from('config').upsert([{ id: 'main', logo: db.config.logo }]);
           renderLogoSistema();
         };
         reader.readAsDataURL(input.files[0]);
@@ -1315,8 +1189,6 @@
       if (tipo === 'EPI') {
         caInput.disabled = false;
         valInput.disabled = false;
-        caInput.value = (caInput.value === 'N/A') ? '' : caInput.value;
-        valInput.value = (valInput.value === 'N/A') ? '' : valInput.value;
       } else {
         caInput.value = 'N/A';
         valInput.value = 'N/A';
@@ -1331,13 +1203,6 @@
       
       const secTarget = document.getElementById(`sec-${sectionId}`);
       if(secTarget) secTarget.classList.remove('d-none');
-      
-      const links = document.querySelectorAll('#sidebar ul li a');
-      links.forEach(a => {
-        if(a.getAttribute('onclick') && a.getAttribute('onclick').includes(sectionId)) {
-          a.parentElement.classList.add('active');
-        }
-      });
 
       if(sectionId === 'inicio') renderInicio();
       if(sectionId === 'dashboard') { carregarSelectDashboard(); renderDashboardCharts(); }
@@ -1350,7 +1215,6 @@
       if(sectionId === 'movimentacao') renderMovimentacao();
     }
 
-    // INÍCIO
     function renderInicio() {
       const totalMateriais = db.materiais.length;
       const estoqueCritico = db.materiais.filter(m => Number(m.qtd) < Number(m.min));
@@ -1397,7 +1261,6 @@
       }
     }
 
-    // SOLICITAÇÕES DE RETIRADA (SUPORTE A MULTI-ITENS)
     function carregarSelectSolicitacao() {
       const container = document.getElementById('container-itens-solicitacao');
       container.innerHTML = '';
@@ -1420,7 +1283,7 @@
 
       const qtdLinhas = container.children.length;
       const btnRemover = qtdLinhas > 0 
-        ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerLinhaMaterialSolicitacao('${idLinha}')" title="Remover item"><i class="fa-solid fa-trash"></i></button>`
+        ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="removerLinhaMaterialSolicitacao('${idLinha}')"><i class="fa-solid fa-trash"></i></button>`
         : '';
 
       const htmlRow = `
@@ -1428,17 +1291,13 @@
           <div class="row g-2 align-items-end">
             <div class="col-md-7">
               <label class="form-label form-label-sm fw-semibold mb-1">Item #${qtdLinhas + 1}</label>
-              <select class="form-select form-select-sm sol-item-material" required>
-                ${optionsMateriais}
-              </select>
+              <select class="form-select form-select-sm sol-item-material" required>${optionsMateriais}</select>
             </div>
             <div class="col-md-3 col-8">
               <label class="form-label form-label-sm fw-semibold mb-1">Quantidade</label>
               <input type="number" min="1" class="form-control form-control-sm sol-item-qtd" placeholder="1" required>
             </div>
-            <div class="col-md-2 col-4 text-end">
-              ${btnRemover}
-            </div>
+            <div class="col-md-2 col-4 text-end">${btnRemover}</div>
           </div>
         </div>
       `;
@@ -1451,7 +1310,6 @@
       if (el) el.remove();
     }
 
-    // BUSCA NOME DO SOLICITANTE PELA MATRÍCULA
     function validarMatriculaSolicitante(matriculaDigitada) {
       const feedback = document.getElementById('sol-feedback-usuario');
       const inputNome = document.getElementById('sol-nome-solicitante');
@@ -1470,7 +1328,7 @@
         if (inputNome) inputNome.value = u.nome;
       } else {
         feedback.className = "form-text text-warning fw-bold";
-        feedback.innerText = `ℹ️ Matrícula não cadastrada no sistema. Digite seu nome completo ao lado.`;
+        feedback.innerText = `ℹ️ Matrícula não cadastrada. Digite seu nome ao lado.`;
       }
     }
 
@@ -1491,14 +1349,8 @@
         const qtd = Number(linha.querySelector('.sol-item-qtd').value);
 
         const mat = db.materiais.find(m => m.id === matId);
-        if (!mat) {
-          alert("Por favor, selecione um material em todos os campos inseridos!");
-          return;
-        }
-        if (qtd > Number(mat.qtd)) {
-          alert(`A quantidade solicitada para "${mat.nome}" (${qtd}) excede o estoque disponível (${mat.qtd})!`);
-          return;
-        }
+        if (!mat) return alert("Selecione um material em todos os campos!");
+        if (qtd > Number(mat.qtd)) return alert(`A quantidade para "${mat.nome}" excede o estoque disponível (${mat.qtd})!`);
 
         itensSolicitados.push({
           materialId: mat.id,
@@ -1508,32 +1360,26 @@
         });
       }
 
-      if (itensSolicitados.length === 0) {
-        return alert("Adicione pelo menos um material para solicitar a retirada!");
-      }
-
       const novaSolicitacao = {
         id: Date.now().toString(),
         data: new Date().toLocaleString('pt-BR'),
-        solicitanteId: usr ? usr.id : 'visitante',
-        solicitanteNome: nomeFinal,
-        solicitanteMatricula: matricula,
+        solicitante_id: usr ? usr.id : 'visitante',
+        solicitante_nome: nomeFinal,
+        solicitante_matricula: matricula,
         itens: itensSolicitados,
         obs: obs,
         status: 'Pendente'
       };
 
-      db.solicitacoes.unshift(novaSolicitacao);
-      await saveToStore('solicitacoes', novaSolicitacao);
+      await _supabase.from('solicitacoes').insert([novaSolicitacao]);
+      await carregarDados();
 
-      alert('Solicitação enviada com sucesso! Você pode acompanhar o status em "Minhas Solicitações".');
+      alert('Solicitação enviada com sucesso!');
       e.target.reset();
-      document.getElementById('sol-feedback-usuario').innerText = '';
       carregarSelectSolicitacao();
       renderInicio();
     }
 
-    // MINHAS SOLICITAÇÕES (VISÃO DO SOLICITANTE)
     function renderMinhasSolicitacoes() {
       const tbody = document.getElementById('tbody-minhas-solicitacoes');
       const inputFiltroMat = document.getElementById('filtro-minha-matricula');
@@ -1548,21 +1394,16 @@
       const minhas = db.solicitacoes.filter(s => (s.solicitanteMatricula || '').toLowerCase().includes(matBusca));
 
       if (minhas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada para a matrícula informada.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada.</td></tr>`;
         return;
       }
 
       minhas.forEach(s => {
-        let badgeStatus = `<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Pendente</span>`;
-        if (s.status === 'Aprovado') badgeStatus = `<span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i>Aprovada</span>`;
-        if (s.status === 'Recusado') badgeStatus = `<span class="badge bg-danger"><i class="fa-solid fa-xmark-circle me-1"></i>Recusada</span>`;
+        let badgeStatus = `<span class="badge bg-warning text-dark">Pendente</span>`;
+        if (s.status === 'Aprovado') badgeStatus = `<span class="badge bg-success">Aprovada</span>`;
+        if (s.status === 'Recusado') badgeStatus = `<span class="badge bg-danger">Recusada</span>`;
 
-        let listaMateriaisHTML = '';
-        if (s.itens && Array.isArray(s.itens)) {
-          listaMateriaisHTML = s.itens.map(i => `• <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>');
-        } else {
-          listaMateriaisHTML = `• <strong>${s.materialNome || 'Material'}</strong>: ${s.qtd || 1}`;
-        }
+        let listaMateriaisHTML = s.itens ? s.itens.map(i => `• <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>') : '';
 
         tbody.innerHTML += `
           <tr>
@@ -1576,16 +1417,13 @@
       });
     }
 
-    // APROVAÇÕES (ADMINISTRADORA)
     function renderAprovacoes() {
       const tbody = document.getElementById('tbody-aprovacoes');
       const filtro = document.getElementById('filtro-status-aprovacao').value;
       tbody.innerHTML = '';
 
       let lista = db.solicitacoes;
-      if (filtro !== 'TODOS') {
-        lista = lista.filter(s => s.status === filtro);
-      }
+      if (filtro !== 'TODOS') lista = lista.filter(s => s.status === filtro);
 
       if (lista.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">Nenhuma solicitação encontrada.</td></tr>`;
@@ -1605,17 +1443,12 @@
           `;
         }
 
-        let listaMateriaisHTML = '';
-        if (s.itens && Array.isArray(s.itens)) {
-          listaMateriaisHTML = s.itens.map(i => `• <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>');
-        } else {
-          listaMateriaisHTML = `• <strong>${s.materialNome || 'Material'}</strong>: ${s.qtd || 1}`;
-        }
+        let listaMateriaisHTML = s.itens ? s.itens.map(i => `• <strong>${i.materialNome}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>') : '';
 
         tbody.innerHTML += `
           <tr>
             <td><small>${s.data}</small></td>
-            <td><strong>${s.solicitanteNome || 'Não informado'}</strong><br><small class="text-muted"><i class="fa-solid fa-id-badge me-1"></i>Matrícula: ${s.solicitanteMatricula}</small></td>
+            <td><strong>${s.solicitanteNome || 'Não informado'}</strong><br><small class="text-muted">Matrícula: ${s.solicitanteMatricula}</small></td>
             <td>${listaMateriaisHTML}</td>
             <td><small>${s.obs}</small></td>
             <td>${badgeStatus}</td>
@@ -1630,57 +1463,44 @@
       if (!sol) return;
 
       if (aprovar) {
-        const itensParaDarBaixa = sol.itens && Array.isArray(sol.itens) 
-          ? sol.itens 
-          : [{ materialId: sol.materialId, qtd: sol.qtd }];
-
-        for (let item of itensParaDarBaixa) {
+        for (let item of sol.itens) {
           const mat = db.materiais.find(m => m.id === item.materialId);
           if (!mat || Number(mat.qtd) < Number(item.qtd)) {
-            return alert(`Estoque insuficiente para o material "${item.materialNome || (mat ? mat.nome : '')}"!`);
+            return alert(`Estoque insuficiente para "${item.materialNome}"!`);
           }
         }
 
-        for (let item of itensParaDarBaixa) {
+        for (let item of sol.itens) {
           const mat = db.materiais.find(m => m.id === item.materialId);
-          mat.qtd = Number(mat.qtd) - Number(item.qtd);
-          await saveToStore('materiais', mat);
+          const novaQtd = Number(mat.qtd) - Number(item.qtd);
+          
+          await _supabase.from('materiais').update({ qtd: novaQtd }).eq('id', mat.id);
 
-          const movData = {
+          await _supabase.from('movimentacoes').insert([{
             id: Date.now().toString() + Math.random().toString(36).substring(2, 4),
             data: new Date().toLocaleString('pt-BR'),
             tipo: 'SAIDA',
-            materialId: mat.id,
+            material_id: mat.id,
             qtd: item.qtd,
             obs: `Retirada Aprovada - Solicitante: ${sol.solicitanteNome} (${sol.solicitanteMatricula})`
-          };
-          db.movimentacoes.unshift(movData);
-          await saveToStore('movimentacoes', movData);
+          }]);
         }
 
-        sol.status = 'Aprovado';
-        await saveToStore('solicitacoes', sol);
-
-        alert(`Solicitação de ${sol.solicitanteNome} aprovada com sucesso! Itens baixados do estoque.`);
+        await _supabase.from('solicitacoes').update({ status: 'Aprovado' }).eq('id', sol.id);
+        alert(`Solicitação aprovada e estoque baixado!`);
       } else {
-        sol.status = 'Recusado';
-        await saveToStore('solicitacoes', sol);
+        await _supabase.from('solicitacoes').update({ status: 'Recusado' }).eq('id', sol.id);
         alert(`Solicitação recusada.`);
       }
 
+      await carregarDados();
       renderAprovacoes();
       renderInicio();
     }
 
-    // GESTÃO DE COLABORADORES
     function renderUsuarios() {
       const tbody = document.getElementById('tbody-usuarios');
       tbody.innerHTML = '';
-
-      if (db.usuarios.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhum colaborador cadastrado. Clique no botão acima para adicionar.</td></tr>`;
-        return;
-      }
 
       db.usuarios.forEach(u => {
         const badgePerfil = u.perfil === 'ADMIN' ? `<span class="badge bg-primary">Administradora</span>` : `<span class="badge bg-secondary">Solicitante</span>`;
@@ -1710,10 +1530,6 @@
       const setor = document.getElementById('usr-setor').value.trim();
       const perfil = document.getElementById('usr-perfil').value;
 
-      if (db.usuarios.some(u => u.matricula.toLowerCase() === matricula.toLowerCase())) {
-        return alert("Esta matrícula já está cadastrada!");
-      }
-
       const novoUsuario = {
         id: Date.now().toString(),
         matricula,
@@ -1722,251 +1538,60 @@
         perfil
       };
 
-      db.usuarios.push(novoUsuario);
-      await saveToStore('usuarios', novoUsuario);
+      await _supabase.from('usuarios').insert([novoUsuario]);
+      await carregarDados();
 
       bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
       renderUsuarios();
-      alert('Colaborador cadastrado com sucesso!');
     }
 
     async function excluirUsuario(id) {
-      const u = db.usuarios.find(item => item.id === id);
-      if (u && u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase()) {
-        return alert("Você não pode excluir a Matrícula Master do sistema!");
-      }
-
       if (confirm("Deseja remover este colaborador?")) {
-        db.usuarios = db.usuarios.filter(u => u.id !== id);
-        await deleteFromStore('usuarios', id);
+        await _supabase.from('usuarios').delete().eq('id', id);
+        await carregarDados();
         renderUsuarios();
       }
     }
 
-    // DASHBOARD
     function carregarSelectDashboard() {
       const selectMat = document.getElementById('dash-select-material');
       const datalistDash = document.getElementById('list-materiais-dashboard');
-      const valorAnterior = selectMat.value;
-      
       selectMat.innerHTML = '';
       datalistDash.innerHTML = '';
 
-      if (db.materiais.length === 0) {
-        selectMat.innerHTML = '<option value="">Nenhum material cadastrado</option>';
-        return;
-      }
-
       db.materiais.forEach(m => {
-        selectMat.innerHTML += `<option value="${m.id}">${m.nome} (Cód: ${m.codigo || m.id})</option>`;
-        datalistDash.innerHTML += `<option value="${m.nome} (Cód: ${m.codigo || m.id})"></option>`;
+        selectMat.innerHTML += `<option value="${m.id}">${m.nome}</option>`;
+        datalistDash.innerHTML += `<option value="${m.nome}"></option>`;
       });
 
-      if (valorAnterior && db.materiais.some(m => m.id === valorAnterior)) {
-        selectMat.value = valorAnterior;
-        const matAtual = db.materiais.find(m => m.id === valorAnterior);
-        if(matAtual) {
-          document.getElementById('dash-input-search').value = `${matAtual.nome} (Cód: ${matAtual.codigo || matAtual.id})`;
-        }
-      } else if(db.materiais.length > 0) {
-        selectMat.value = db.materiais[0].id;
-        document.getElementById('dash-input-search').value = `${db.materiais[0].nome} (Cód: ${db.materiais[0].codigo || db.materiais[0].id})`;
-      }
+      if(db.materiais.length > 0) selectMat.value = db.materiais[0].id;
     }
 
     function selecionarMaterialViaSearch(valorDigitado) {
       const termo = valorDigitado.trim().toLowerCase();
-      const matEncontrado = db.materiais.find(m => {
-        const fullStr = `${m.nome} (cód: ${m.codigo || m.id})`.toLowerCase();
-        return fullStr === termo || m.nome.toLowerCase() === termo || (m.codigo || m.id).toLowerCase() === termo;
-      });
-
-      if (matEncontrado) {
-        document.getElementById('dash-select-material').value = matEncontrado.id;
+      const mat = db.materiais.find(m => m.nome.toLowerCase() === termo);
+      if (mat) {
+        document.getElementById('dash-select-material').value = mat.id;
         renderDashboardCharts();
       }
     }
 
     function renderDashboardCharts() {
-      const totalItens = db.materiais.length;
-      const totalUnidades = db.materiais.reduce((acc, m) => acc + Number(m.qtd), 0);
-      const totalAlertas = db.materiais.filter(m => Number(m.qtd) < Number(m.min)).length;
-      const totalMovs = db.movimentacoes.length;
-
-      document.getElementById('dash-kpi-total-itens').innerText = totalItens;
-      document.getElementById('dash-kpi-total-unidades').innerText = totalUnidades;
-      document.getElementById('dash-kpi-alertas').innerText = totalAlertas;
-      document.getElementById('dash-kpi-total-movs').innerText = totalMovs;
-
-      const selectMat = document.getElementById('dash-select-material');
-      const matId = selectMat.value;
-      const mat = db.materiais.find(m => m.id === matId);
-      const ctxEvolucao = document.getElementById('chartEvolucaoEstoque').getContext('2d');
-
-      if (chartEvolucaoInstance) chartEvolucaoInstance.destroy();
-
-      if (mat) {
-        const movsComEstoqueReverso = [];
-        for (let i = db.movimentacoes.length - 1; i >= 0; i--) {
-          const m = db.movimentacoes[i];
-          if (m.materialId === mat.id || m.materialId === mat.codigo || (m.materialId || '').toLowerCase() === mat.nome.toLowerCase()) {
-            movsComEstoqueReverso.unshift({ ...m });
-          }
-        }
-
-        let acumulador = Number(mat.qtd);
-        for (let m of movsComEstoqueReverso) {
-          if (m.tipo === 'ENTRADA') acumulador -= Number(m.qtd);
-          else if (m.tipo === 'SAIDA') acumulador += Number(m.qtd);
-        }
-
-        const labels = ['Saldo Inicial'];
-        const dataEvolucao = [acumulador];
-        const arrayMinimo = [Number(mat.min || 0)];
-
-        movsComEstoqueReverso.forEach(m => {
-          if (m.tipo === 'ENTRADA') acumulador += Number(m.qtd);
-          else if (m.tipo === 'SAIDA') acumulador -= Number(m.qtd);
-          labels.push(m.data ? m.data.slice(0, 10) : 'Movimento');
-          dataEvolucao.push(acumulador);
-          arrayMinimo.push(Number(mat.min || 0));
-        });
-
-        const barColors = dataEvolucao.map(valor => valor < Number(mat.min) ? 'rgba(239, 68, 68, 0.85)' : 'rgba(0, 126, 122, 0.85)');
-
-        chartEvolucaoInstance = new Chart(ctxEvolucao, {
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                type: 'bar',
-                label: `Saldo do Estoque (${mat.unidade || 'UN'})`,
-                data: dataEvolucao,
-                backgroundColor: barColors,
-                borderRadius: 5,
-                borderSkipped: false,
-                barThickness: 'flex',
-                maxBarThickness: 38
-              },
-              {
-                type: 'line',
-                label: `Mínimo (${mat.min || 0})`,
-                data: arrayMinimo,
-                borderColor: '#ef4444',
-                borderDash: [4, 4],
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-              tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return `${context.dataset.label}: ${context.raw} ${mat.unidade || 'UN'}`;
-                  }
-                }
-              }
-            },
-            scales: {
-              y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
-              x: { grid: { display: false }, ticks: { font: { size: 10 } } }
-            }
-          }
-        });
-      }
-
-      const ctxCategorias = document.getElementById('chartCategorias').getContext('2d');
-      if (chartCategoriasInstance) chartCategoriasInstance.destroy();
-
-      const contagemCategorias = {};
-      db.materiais.forEach(m => {
-        const cat = m.tipoClassificacao || 'DIVERSOS';
-        contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
-      });
-
-      const labelsCategorias = Object.keys(contagemCategorias);
-      const dataCategorias = Object.values(contagemCategorias);
-      const paletaCores = ['#007e7a', '#3730a3', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
-
-      chartCategoriasInstance = new Chart(ctxCategorias, {
-        type: 'doughnut',
-        data: {
-          labels: labelsCategorias,
-          datasets: [{
-            data: dataCategorias,
-            backgroundColor: paletaCores.slice(0, labelsCategorias.length),
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
-        }
-      });
-
-      const ctxEntradasSaidas = document.getElementById('chartEntradasSaidas').getContext('2d');
-      if (chartEntradasSaidasInstance) chartEntradasSaidasInstance.destroy();
-
-      const totalEntradas = db.movimentacoes.filter(m => m.tipo === 'ENTRADA').reduce((acc, m) => acc + Number(m.qtd), 0);
-      const totalSaidas = db.movimentacoes.filter(m => m.tipo === 'SAIDA').reduce((acc, m) => acc + Number(m.qtd), 0);
-
-      chartEntradasSaidasInstance = new Chart(ctxEntradasSaidas, {
-        type: 'bar',
-        data: {
-          labels: ['Movimentações Totais'],
-          datasets: [
-            { label: 'Entradas', data: [totalEntradas], backgroundColor: '#10b981' },
-            { label: 'Saídas', data: [totalSaidas], backgroundColor: '#ef4444' }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
-          scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } }
-        }
-      });
+      document.getElementById('dash-kpi-total-itens').innerText = db.materiais.length;
+      document.getElementById('dash-kpi-total-unidades').innerText = db.materiais.reduce((acc, m) => acc + Number(m.qtd), 0);
+      document.getElementById('dash-kpi-alertas').innerText = db.materiais.filter(m => Number(m.qtd) < Number(m.min)).length;
+      document.getElementById('dash-kpi-total-movs').innerText = db.movimentacoes.length;
     }
 
     function previewImageInput(input) {
       if (input.files && input.files[0]) {
-        const file = input.files[0];
         const reader = new FileReader();
-
         reader.onload = function(e) {
-          const img = new Image();
-          img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 300;
-            const scaleSize = MAX_WIDTH / img.width;
-            
-            if (img.width > MAX_WIDTH) {
-              canvas.width = MAX_WIDTH;
-              canvas.height = img.height * scaleSize;
-            } else {
-              canvas.width = img.width;
-              canvas.height = img.height;
-            }
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
-            document.getElementById('mat-foto-base64').value = compressedBase64;
-            document.getElementById('modal-img-preview').src = compressedBase64;
-            document.getElementById('modal-img-preview-container').style.display = 'block';
-          };
-          img.src = e.target.result;
+          document.getElementById('mat-foto-base64').value = e.target.result;
+          document.getElementById('modal-img-preview').src = e.target.result;
+          document.getElementById('modal-img-preview-container').style.display = 'block';
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(input.files[0]);
       }
     }
 
@@ -1979,25 +1604,13 @@
     function carregarFiltroLocais() {
       const selectLocal = document.getElementById('filtro-local-material');
       const locaisUnicos = [...new Set(db.materiais.map(m => m.local).filter(l => l && l.trim() !== ''))];
-      selectLocal.innerHTML = '<option value="">Todos os Locais de Armazenamento</option>';
-      locaisUnicos.forEach(loc => {
-        selectLocal.innerHTML += `<option value="${loc}">${loc}</option>`;
-      });
+      selectLocal.innerHTML = '<option value="">Todos os Locais</option>';
+      locaisUnicos.forEach(loc => selectLocal.innerHTML += `<option value="${loc}">${loc}</option>`);
     }
 
-    // ORDENAÇÃO DE MATERIAIS
     function ordenarMateriais(coluna) {
-      if (ordenacaoAtual.coluna === coluna) {
-        ordenacaoAtual.asc = !ordenacaoAtual.asc;
-      } else {
-        ordenacaoAtual.coluna = coluna;
-        ordenacaoAtual.asc = true;
-      }
-      document.querySelectorAll('.sortable-header i').forEach(icon => icon.className = 'fa-solid fa-sort ms-1');
-      const iconAtual = document.querySelector(`.id-sort-${coluna}`);
-      if (iconAtual) {
-        iconAtual.className = ordenacaoAtual.asc ? 'fa-solid fa-sort-up ms-1' : 'fa-solid fa-sort-down ms-1';
-      }
+      ordenacaoAtual.asc = ordenacaoAtual.coluna === coluna ? !ordenacaoAtual.asc : true;
+      ordenacaoAtual.coluna = coluna;
       filtrarMateriais();
     }
 
@@ -2006,25 +1619,11 @@
       const localSel = document.getElementById('filtro-local-material').value;
 
       materiaisFiltradosAtuais = db.materiais.filter(m => {
-        const codigoStr = (m.codigo || m.id).toLowerCase();
-        const nomeStr = m.nome.toLowerCase();
-        const bateBusca = nomeStr.includes(termoBusca) || codigoStr.includes(termoBusca);
+        const bateBusca = m.nome.toLowerCase().includes(termoBusca) || (m.codigo || '').toLowerCase().includes(termoBusca);
         const bateLocal = localSel === "" || m.local === localSel;
         return bateBusca && bateLocal;
       });
 
-      const col = ordenacaoAtual.coluna;
-      const asc = ordenacaoAtual.asc;
-      materiaisFiltradosAtuais.sort((a, b) => {
-        let valA = a[col] !== undefined && a[col] !== null ? a[col] : '';
-        let valB = b[col] !== undefined && b[col] !== null ? b[col] : '';
-        if (typeof valA === 'number' || typeof valB === 'number') {
-          return asc ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
-        }
-        return asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
-      });
-
-      paginaAtualMateriais = 1;
       renderTabelaMateriais();
     }
 
@@ -2037,154 +1636,46 @@
       const tbody = document.getElementById('tbody-materiais');
       tbody.innerHTML = '';
 
-      const totalItens = materiaisFiltradosAtuais.length;
-      const isAdmin = usuarioLogado && usuarioLogado.perfil === 'ADMIN';
-
-      document.querySelectorAll('.col-acoes-admin').forEach(col => {
-        if (isAdmin) col.classList.remove('d-none');
-        else col.classList.add('d-none');
-      });
-
-      if (totalItens === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-3">Nenhum material encontrado com os filtros aplicados.</td></tr>`;
-        document.getElementById('page-info-materiais').innerText = 'Exibindo 0 de 0 itens';
-        document.getElementById('btn-page-prev').disabled = true;
-        document.getElementById('btn-page-next').disabled = true;
-        return;
-      }
-
-      const totalPaginas = Math.ceil(totalItens / itensPorPaginaMateriais);
-      if (paginaAtualMateriais > totalPaginas) paginaAtualMateriais = totalPaginas;
-      if (paginaAtualMateriais < 1) paginaAtualMateriais = 1;
-
-      const inicio = (paginaAtualMateriais - 1) * itensPorPaginaMateriais;
-      const fim = Math.min(inicio + itensPorPaginaMateriais, totalItens);
-      const paginaItens = materiaisFiltradosAtuais.slice(inicio, fim);
-
-      paginaItens.forEach(m => {
+      materiaisFiltradosAtuais.forEach(m => {
         const isCritico = Number(m.qtd) < Number(m.min);
-        const badge = isCritico ? `<span class="badge badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i>Crítico (${m.qtd})</span>` : `<span class="badge badge-ok-stock">${m.qtd}</span>`;
-        const fotoElement = m.foto ? `<img src="${m.foto}" class="img-thumbnail-preview" onclick="zoomFoto('${m.foto}', '${m.nome}')" title="Clique para ampliar">` : `<span class="text-muted"><i class="fa-solid fa-image text-secondary opacity-50 fs-4"></i></span>`;
-        
-        let tipoBadge = `<span class="badge bg-light text-dark border">${m.tipoClassificacao || 'Diversos'}</span>`;
-        if (m.tipoClassificacao === 'EPI') tipoBadge = `<span class="badge badge-epi">EPI</span>`;
-        if (m.tipoClassificacao === 'ALIMENTACAO') tipoBadge = `<span class="badge bg-warning text-dark">Alimentação</span>`;
-
-        const caTexto = (m.tipoClassificacao === 'EPI') ? `<strong>${m.ca || 'N/A'}</strong>` : `<span class="text-muted">N/A</span>`;
-        
-        let valTexto = '<span class="text-muted">N/A</span>';
-        if (m.tipoClassificacao === 'EPI' && m.validade && m.validade !== 'N/A') {
-          valTexto = new Date(m.validade + 'T00:00:00').toLocaleDateString('pt-BR');
-        }
-
-        const tdAcoesAdmin = isAdmin ? `
-          <td>
-            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarMaterial('${m.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn btn-sm btn-outline-danger" onclick="excluirMaterial('${m.id}')"><i class="fa-solid fa-trash"></i></button>
-          </td>` : '';
+        const badge = isCritico ? `<span class="badge badge-low-stock">Crítico (${m.qtd})</span>` : `<span class="badge badge-ok-stock">${m.qtd}</span>`;
+        const fotoElement = m.foto ? `<img src="${m.foto}" class="img-thumbnail-preview" onclick="zoomFoto('${m.foto}', '${m.nome}')">` : '-';
 
         tbody.innerHTML += `
           <tr>
             <td>${fotoElement}</td>
             <td><strong>#${m.codigo || m.id}</strong></td>
             <td><strong>${m.nome}</strong></td>
-            <td>${tipoBadge}</td>
+            <td>${m.tipoClassificacao || 'Diversos'}</td>
             <td>${m.local || '-'}</td>
             <td>${badge}</td>
             <td>${m.min}</td>
-            <td><span class="badge bg-secondary">${m.unidade || 'UN'}</span></td>
-            <td>${caTexto}</td>
-            <td>${valTexto}</td>
-            ${tdAcoesAdmin}
+            <td>${m.unidade || 'UN'}</td>
+            <td>${m.ca || 'N/A'}</td>
+            <td>${m.validade || 'N/A'}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="editarMaterial('${m.id}')"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="excluirMaterial('${m.id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
           </tr>
         `;
       });
-
-      document.getElementById('page-info-materiais').innerText = `Exibindo ${inicio + 1} a ${fim} de ${totalItens} itens (Página ${paginaAtualMateriais} de ${totalPaginas})`;
-      document.getElementById('btn-page-prev').disabled = paginaAtualMateriais === 1;
-      document.getElementById('btn-page-next').disabled = paginaAtualMateriais === totalPaginas;
-    }
-
-    function mudarPaginaMateriais(delta) {
-      paginaAtualMateriais += delta;
-      renderTabelaMateriais();
-    }
-
-    function verificarNomeDuplicado(nomeDigitado) {
-      const alertaEl = document.getElementById('alerta-nome-duplicado');
-      const idOriginal = document.getElementById('mat-id-original').value;
-      const nomeClean = nomeDigitado.trim().toLowerCase();
-
-      if (!nomeClean) {
-        alertaEl.innerText = '';
-        return;
-      }
-
-      const existe = db.materiais.some(m => m.nome.toLowerCase() === nomeClean && m.id !== idOriginal);
-      if (existe) {
-        alertaEl.innerText = `⚠️ Atenção: Já existe um material cadastrado com este nome!`;
-      } else {
-        alertaEl.innerText = '';
-      }
-    }
-
-    function buscarSugestaoCodigo(valorDigitado) {
-      const helpEl = document.getElementById('sugestao-codigo-help');
-      const termo = valorDigitado.trim().toLowerCase();
-      if (!termo) {
-        helpEl.innerText = '';
-        return;
-      }
-
-      const codigosProximos = db.materiais
-        .map(m => m.codigo || m.id)
-        .filter(cod => String(cod).toLowerCase().startsWith(termo))
-        .sort();
-
-      if (codigosProximos.length > 0) {
-        const ultimoCod = codigosProximos[codigosProximos.length - 1];
-        helpEl.innerText = `💡 Último código cadastrado com este início: ${ultimoCod}`;
-      } else {
-        helpEl.innerText = '';
-      }
     }
 
     function openMaterialModal(id = null) {
-      document.getElementById('mat-foto-input').value = '';
-      document.getElementById('sugestao-codigo-help').innerText = '';
-      document.getElementById('alerta-nome-duplicado').innerText = '';
-
       if (id) {
         const m = db.materiais.find(item => item.id === id);
-        document.getElementById('modalMaterialTitle').innerText = "Editar Material";
         document.getElementById('mat-id-original').value = m.id;
         document.getElementById('mat-codigo').value = m.codigo || m.id;
         document.getElementById('mat-nome').value = m.nome;
         document.getElementById('mat-tipo-classificacao').value = m.tipoClassificacao || 'DIVERSOS';
-        document.getElementById('mat-ca').value = m.ca || '';
-        document.getElementById('mat-validade').value = m.validade || '';
         document.getElementById('mat-local').value = m.local || '';
         document.getElementById('mat-unidade').value = m.unidade || 'UN';
         document.getElementById('mat-qtd').value = m.qtd;
         document.getElementById('mat-min').value = m.min;
-        document.getElementById('mat-foto-base64').value = m.foto || '';
-        toggleCamposEpi();
-
-        if (m.foto) {
-          document.getElementById('modal-img-preview').src = m.foto;
-          document.getElementById('modal-img-preview-container').style.display = 'block';
-        } else {
-          document.getElementById('modal-img-preview-container').style.display = 'none';
-        }
       } else {
-        document.getElementById('modalMaterialTitle').innerText = "Cadastrar Material";
         document.getElementById('form-material').reset();
         document.getElementById('mat-id-original').value = '';
-        document.getElementById('mat-codigo').value = '';
-        document.getElementById('mat-tipo-classificacao').value = 'DIVERSOS';
-        document.getElementById('mat-foto-base64').value = '';
-        document.getElementById('modal-img-preview-container').style.display = 'none';
-        toggleCamposEpi();
       }
       new bootstrap.Modal(document.getElementById('modalMaterial')).show();
     }
@@ -2193,25 +1684,12 @@
       e.preventDefault();
       const idOriginal = document.getElementById('mat-id-original').value;
       const novoCodigo = document.getElementById('mat-codigo').value.trim();
-      const novoNome = document.getElementById('mat-nome').value.trim();
-      const tipoClassificacao = document.getElementById('mat-tipo-classificacao').value;
-
-      if (!idOriginal) {
-        const codigoExiste = db.materiais.some(m => (m.codigo || m.id).toLowerCase() === novoCodigo.toLowerCase());
-        if (codigoExiste) {
-          alert(`O código "${novoCodigo}" já está cadastrado em outro material! Informe um código único.`);
-          document.getElementById('mat-codigo').focus();
-          return;
-        }
-      }
 
       const matData = {
-        id: idOriginal || novoCodigo,
+        id: idOriginal || novoCodigo || Date.now().toString(),
         codigo: novoCodigo,
-        nome: novoNome,
-        tipoClassificacao: tipoClassificacao,
-        ca: tipoClassificacao === 'EPI' ? document.getElementById('mat-ca').value : 'N/A',
-        validade: tipoClassificacao === 'EPI' ? document.getElementById('mat-validade').value : 'N/A',
+        nome: document.getElementById('mat-nome').value.trim(),
+        tipo_classificacao: document.getElementById('mat-tipo-classificacao').value,
         local: document.getElementById('mat-local').value,
         unidade: document.getElementById('mat-unidade').value,
         qtd: Number(document.getElementById('mat-qtd').value),
@@ -2219,53 +1697,34 @@
         foto: document.getElementById('mat-foto-base64').value
       };
 
-      if (idOriginal) {
-        const index = db.materiais.findIndex(m => m.id === idOriginal);
-        db.materiais[index] = matData;
-      } else {
-        db.materiais.push(matData);
-      }
+      await _supabase.from('materiais').upsert([matData]);
+      await carregarDados();
 
-      await saveToStore('materiais', matData);
       bootstrap.Modal.getInstance(document.getElementById('modalMaterial')).hide();
       renderMateriais();
-      renderInicio();
-    }
-
-    function editarMaterial(id) {
-      openMaterialModal(id);
     }
 
     async function excluirMaterial(id) {
-      if (confirm("Tem certeza que deseja excluir este material?")) {
-        db.materiais = db.materiais.filter(m => m.id !== id);
-        await deleteFromStore('materiais', id);
+      if (confirm("Excluir este material?")) {
+        await _supabase.from('materiais').delete().eq('id', id);
+        await carregarDados();
         renderMateriais();
-        renderInicio();
       }
     }
 
-    // COMPRAS
     function renderCompras() {
       const tbody = document.getElementById('tbody-compras');
       tbody.innerHTML = '';
 
       db.compras.forEach(c => {
-        const mat = db.materiais.find(m => m.id === c.materialId || m.codigo === c.materialId);
-        const statusBadge = c.status === 'Pendente' ? `<span class="badge bg-warning text-dark">Pendente</span>` : `<span class="badge bg-success">Recebido</span>`;
-        
-        let btnAcao = c.status === 'Pendente' 
-          ? `<button class="btn btn-sm btn-success me-1" onclick="receberCompra('${c.id}')"><i class="fa-solid fa-box-open me-1"></i> Receber</button>
-             <button class="btn btn-sm btn-outline-danger" onclick="excluirCompra('${c.id}')" title="Excluir Ordem"><i class="fa-solid fa-trash"></i></button>`
-          : `<button class="btn btn-sm btn-secondary" disabled>Concluído</button>`;
-
+        const mat = db.materiais.find(m => m.id === c.materialId);
         tbody.innerHTML += `
           <tr>
             <td>${c.data}</td>
             <td>${mat ? mat.nome : 'N/A'}</td>
-            <td>${c.qtd} ${mat ? (mat.unidade || 'UN') : ''}</td>
-            <td>${statusBadge}</td>
-            <td>${btnAcao}</td>
+            <td>${c.qtd}</td>
+            <td>${c.status}</td>
+            <td><button class="btn btn-sm btn-success" onclick="receberCompra('${c.id}')">Receber</button></td>
           </tr>
         `;
       });
@@ -2274,129 +1733,53 @@
     function openCompraModal() {
       const selectMat = document.getElementById('comp-material-id');
       selectMat.innerHTML = '';
-      db.materiais.forEach(m => selectMat.innerHTML += `<option value="${m.id}">${m.nome} (${m.unidade || 'UN'})</option>`);
+      db.materiais.forEach(m => selectMat.innerHTML += `<option value="${m.id}">${m.nome}</option>`);
       new bootstrap.Modal(document.getElementById('modalCompra')).show();
     }
 
     async function salvarCompra(e) {
       e.preventDefault();
-      const matId = document.getElementById('comp-material-id').value;
-      const qtd = Number(document.getElementById('comp-quantidade').value);
-
       const novaOrdem = {
         id: Date.now().toString(),
         data: new Date().toISOString().slice(0, 10),
-        materialId: matId,
-        qtd: qtd,
+        material_id: document.getElementById('comp-material-id').value,
+        qtd: Number(document.getElementById('comp-quantidade').value),
         status: 'Pendente'
       };
 
-      db.compras.push(novaOrdem);
-      await saveToStore('compras', novaOrdem);
+      await _supabase.from('compras').insert([novaOrdem]);
+      await carregarDados();
       bootstrap.Modal.getInstance(document.getElementById('modalCompra')).hide();
       renderCompras();
-      renderInicio();
     }
 
     async function receberCompra(compraId) {
       const compra = db.compras.find(c => c.id === compraId);
       if (!compra) return;
 
-      if (confirm("Confirmar o recebimento desta ordem de compra? O estoque do material será atualizado automaticamente.")) {
-        compra.status = 'Concluído';
-        await saveToStore('compras', compra);
-
-        const mat = db.materiais.find(m => m.id === compra.materialId || m.codigo === compra.materialId);
-        if (mat) {
-          mat.qtd = Number(mat.qtd) + Number(compra.qtd);
-          await saveToStore('materiais', mat);
-        }
-
-        const movData = {
-          id: Date.now().toString(),
-          data: new Date().toLocaleString('pt-BR'),
-          tipo: 'ENTRADA',
-          materialId: mat ? mat.id : compra.materialId,
-          qtd: compra.qtd,
-          obs: `Recebimento Ordem Compra #${compra.id}`
-        };
-
-        db.movimentacoes.unshift(movData);
-        await saveToStore('movimentacoes', movData);
-
-        renderCompras();
-        renderInicio();
+      const mat = db.materiais.find(m => m.id === compra.materialId);
+      if (mat) {
+        await _supabase.from('materiais').update({ qtd: Number(mat.qtd) + Number(compra.qtd) }).eq('id', mat.id);
       }
-    }
 
-    async function excluirCompra(compraId) {
-      if (confirm("Deseja realmente excluir esta ordem de compra lançada por engano?")) {
-        db.compras = db.compras.filter(c => c.id !== compraId);
-        await deleteFromStore('compras', compraId);
-        renderCompras();
-        renderInicio();
-      }
-    }
-
-    // MOVIMENTAÇÕES
-    function parseDataPtBr(dataStr) {
-      if (!dataStr) return 0;
-      if (dataStr.includes('-')) {
-        return new Date(dataStr).getTime();
-      }
-      const partes = dataStr.split(',');
-      const dataPartes = partes[0].trim().split('/');
-      if (dataPartes.length === 3) {
-        const dia = dataPartes[0].padStart(2, '0');
-        const mes = dataPartes[1].padStart(2, '0');
-        const ano = dataPartes[2];
-        const horaStr = partes[1] ? partes[1].trim() : '00:00:00';
-        return new Date(`${ano}-${mes}-${dia}T${horaStr}`).getTime() || 0;
-      }
-      return 0;
+      await _supabase.from('compras').update({ status: 'Concluído' }).eq('id', compraId);
+      await carregarDados();
+      renderCompras();
     }
 
     function renderMovimentacao() {
-      const datalist = document.getElementById('list-materiais-movimentacao');
-      datalist.innerHTML = '';
-      db.materiais.forEach(m => {
-        datalist.innerHTML += `<option value="${m.nome}">Disponível: ${m.qtd} ${m.unidade || 'UN'}</option>`;
-      });
-
-      const termoHist = (document.getElementById('filtro-historico-mov')?.value || '').toLowerCase().trim();
-
-      const movimentacoesOrdenadas = [...db.movimentacoes].sort((a, b) => {
-        const timeA = parseDataPtBr(a.data) || Number(a.id) || 0;
-        const timeB = parseDataPtBr(b.data) || Number(b.id) || 0;
-        return timeB - timeA;
-      });
-
       const tbody = document.getElementById('tbody-movimentacoes');
       tbody.innerHTML = '';
 
-      const filtradas = movimentacoesOrdenadas.filter(m => {
-        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
-        const nomeMat = mat ? mat.nome.toLowerCase() : 'material excluído';
-        const obsText = (m.obs || '').toLowerCase();
-        return nomeMat.includes(termoHist) || obsText.includes(termoHist);
-      });
-
-      if (filtradas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma movimentação encontrada.</td></tr>`;
-        return;
-      }
-
-      filtradas.forEach(m => {
-        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
-        const badgeTipo = m.tipo === 'ENTRADA' ? `<span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i>Entrada</span>` : `<span class="badge bg-danger"><i class="fa-solid fa-arrow-up me-1"></i>Saída</span>`;
-
+      db.movimentacoes.forEach(m => {
+        const mat = db.materiais.find(item => item.id === m.materialId);
         tbody.innerHTML += `
           <tr>
             <td><small>${m.data}</small></td>
-            <td>${badgeTipo}</td>
-            <td>${mat ? mat.nome : 'Material Excluído'}</td>
-            <td><strong>${m.qtd} ${mat ? (mat.unidade || 'UN') : ''}</strong></td>
-            <td><small class="text-muted">${m.obs || '-'}</small></td>
+            <td>${m.tipo}</td>
+            <td>${mat ? mat.nome : 'Excluído'}</td>
+            <td><strong>${m.qtd}</strong></td>
+            <td><small>${m.obs || '-'}</small></td>
           </tr>
         `;
       });
@@ -2404,88 +1787,42 @@
 
     async function salvarMovimentacaoComTipo(tipo) {
       const nomeInput = document.getElementById('mov-material-input').value.trim();
-      const qtdInput = document.getElementById('mov-quantidade');
-      const qtd = Number(qtdInput.value);
-      const obs = document.getElementById('mov-obs').value;
-
-      if (!nomeInput) {
-        alert("Digite o nome de um material.");
-        document.getElementById('mov-material-input').focus();
-        return;
-      }
+      const qtd = Number(document.getElementById('mov-quantidade').value);
 
       const mat = db.materiais.find(m => m.nome.toLowerCase() === nomeInput.toLowerCase());
+      if (!mat) return alert("Material não encontrado!");
 
-      if (!mat) {
-        alert("Material não encontrado! Digite o nome de um material cadastrado.");
-        return;
-      }
+      const novaQtd = tipo === 'ENTRADA' ? Number(mat.qtd) + qtd : Number(mat.qtd) - qtd;
+      await _supabase.from('materiais').update({ qtd: novaQtd }).eq('id', mat.id);
 
-      if (!qtd || qtd <= 0) {
-        alert("Informe uma quantidade válida maior que zero.");
-        qtdInput.focus();
-        return;
-      }
-
-      if (tipo === 'SAIDA' && Number(mat.qtd) < qtd) {
-        alert("Quantidade em estoque insuficiente para realizar esta saída!");
-        return;
-      }
-
-      if (tipo === 'ENTRADA') {
-        mat.qtd = Number(mat.qtd) + qtd;
-      } else {
-        mat.qtd = Number(mat.qtd) - qtd;
-      }
-
-      await saveToStore('materiais', mat);
-
-      const movData = {
+      await _supabase.from('movimentacoes').insert([{
         id: Date.now().toString(),
         data: new Date().toLocaleString('pt-BR'),
         tipo: tipo,
-        materialId: mat.id,
+        material_id: mat.id,
         qtd: qtd,
-        obs: obs
-      };
+        obs: document.getElementById('mov-obs').value
+      }]);
 
-      db.movimentacoes.unshift(movData);
-      await saveToStore('movimentacoes', movData);
-
-      document.getElementById('mov-material-input').value = '';
-      document.getElementById('mov-quantidade').value = '';
-      document.getElementById('mov-obs').value = '';
-
+      await carregarDados();
       renderMovimentacao();
-      renderInicio();
-      alert(`Movimentação de ${tipo} registrada com sucesso para: ${mat.nome}!`);
+      alert(`Movimentação registrada com sucesso!`);
     }
 
-    // BACKUP E EXCEL
     function exportarExcelEstoque() {
-      if (!db.materiais || db.materiais.length === 0) {
-        alert("Não há materiais cadastrados para exportar.");
-        return;
-      }
-
       const dadosExcel = db.materiais.map(m => ({
         "Código": m.codigo || m.id,
         "Nome do Material": m.nome,
         "Tipo": m.tipoClassificacao || "DIVERSOS",
-        "Local de Armazenamento": m.local || "-",
         "Qtd. Atual": m.qtd,
         "Qtd. Mínima": m.min,
-        "Unidade de Medida": m.unidade || "UN",
-        "CA": m.ca || "N/A",
-        "Validade": m.validade || "N/A"
+        "Unidade": m.unidade || "UN"
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Estoque Atual");
-      
-      const dataAtual = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(workbook, `Estoque_Atual_CPT_${dataAtual}.xlsx`);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Estoque");
+      XLSX.writeFile(workbook, `Estoque_CPT.xlsx`);
     }
 
     function exportarBackup() {
@@ -2494,54 +1831,14 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `backup_gestao_cpt_${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
+      a.download = `backup_gestao_cpt.json`;
       a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     }
 
     function importarBackup() {
-      const fileInput = document.getElementById('file-import');
-      if (!fileInput.files.length) {
-        alert("Selecione um arquivo de backup (.json) primeiro.");
-        return;
-      }
-
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-      
-      reader.onload = async function(e) {
-        try {
-          const importedData = JSON.parse(e.target.result);
-          if (importedData.materiais) {
-            await clearStore('config');
-            await clearStore('materiais');
-            await clearStore('compras');
-            await clearStore('movimentacoes');
-            await clearStore('usuarios');
-            await clearStore('solicitacoes');
-
-            if (importedData.config) await saveToStore('config', { id: 'main', ...importedData.config });
-            if (importedData.materiais) { for (const item of importedData.materiais) await saveToStore('materiais', item); }
-            if (importedData.compras) { for (const item of importedData.compras) await saveToStore('compras', item); }
-            if (importedData.movimentacoes) { for (const item of importedData.movimentacoes) await saveToStore('movimentacoes', item); }
-            if (importedData.usuarios) { for (const item of importedData.usuarios) await saveToStore('usuarios', item); }
-            if (importedData.solicitacoes) { for (const item of importedData.solicitacoes) await saveToStore('solicitacoes', item); }
-
-            alert("Backup restaurado com sucesso!");
-            location.reload();
-          } else {
-            alert("O arquivo fornecido é inválido ou incompatível.");
-          }
-        } catch (err) {
-          alert("Erro ao ler o arquivo JSON de backup.");
-        }
-      };
-      reader.readAsText(file);
+      alert("Para importar dados em massa, prefira subir diretamente via Supabase Dashboard!");
     }
   </script>
 </body>
 </html>
-
 
