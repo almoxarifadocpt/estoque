@@ -24,10 +24,11 @@
   <script>if (window.Chart) { Chart.defaults.font.family = "'IBM Plex Sans','Segoe UI',sans-serif"; Chart.defaults.color = '#3f5a58'; }</script>
   <!-- SheetJS (xlsx) para exportação de Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* =========================================================
        GESTÃO DE ESTOQUE CPT — TEMA VISUAL REFINADO
-       Somente aparência: nenhuma funcionalidade foi alterada.
        ========================================================= */
     :root {
       --sidebar-width: 256px;
@@ -207,7 +208,6 @@
     #sidebar a:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
     #sidebar .badge.ms-auto { border-radius: 999px; font-size: .68rem; padding: .3em .6em; }
 
-    /* Identificação do usuário (selos na barra lateral) */
     #sidebar .badge.w-100 { padding: .5em .7em; font-size: .72rem; border: 1px solid transparent; }
     #sidebar .badge.bg-success.w-100 { background-color: rgba(52, 211, 153, .16) !important; color: #a7f3d0 !important; border-color: rgba(52, 211, 153, .3); }
     #sidebar .badge.bg-secondary.w-100 { background-color: rgba(255, 255, 255, .1) !important; color: #d6e4e3 !important; border-color: rgba(255, 255, 255, .16); }
@@ -258,7 +258,6 @@
     .app-section h4 { letter-spacing: -.01em; }
     .app-section h5 { font-size: 1rem; font-weight: 600; }
 
-    /* Cabeçalho da tela inicial */
     #sec-inicio > .bg-white.rounded {
       padding: 1.25rem 1.5rem !important;
       margin-bottom: 1.25rem !important;
@@ -268,7 +267,6 @@
     }
     #sec-inicio h3.text-primary { color: var(--ink) !important; }
 
-    /* Barra superior (mobile) */
     .navbar.d-md-none {
       background: #fff !important;
       border: 1px solid var(--line);
@@ -471,11 +469,9 @@
     }
     .logo-container:hover .logo-overlay-icon { display: block; }
 
-    /* ---------- Rolagem discreta nas tabelas ---------- */
     .table-responsive::-webkit-scrollbar { height: 8px; }
     .table-responsive::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
 
-    /* ---------- Responsivo ---------- */
     @media (max-width: 768px) {
       #sidebar { margin-left: calc(var(--sidebar-width) * -1); }
       #sidebar.active { margin-left: 0; box-shadow: var(--shadow-md); }
@@ -508,7 +504,6 @@
         <h5 class="m-0 text-white">Gestão de Estoque</h5>
       </div>
     </div>
-    <!-- Identificação por Matrícula na Barra Lateral -->
     <div class="p-2 border-bottom border-secondary bg-dark bg-opacity-25">
       <small class="text-light opacity-75 d-block mb-1" style="font-size: 0.72rem;"><i class="fa-solid fa-id-card me-1"></i>IDENTIFICAÇÃO DE ACESSO:</small>
       <div class="input-group input-group-sm">
@@ -536,7 +531,6 @@
       <li class="menu-admin">
         <a href="#" onclick="showSection('aprovacoes')"><i class="fa-solid fa-clipboard-check"></i> Aprovações <span id="badge-count-aprovacoes" class="badge bg-danger ms-auto d-none">0</span></a>
       </li>
-      <!-- MENU RESTRITO EXCLUSIVAMENTE PARA A SUA MATRÍCULA -->
       <li id="menu-colaboradores-master" class="d-none">
         <a href="#" onclick="showSection('usuarios')"><i class="fa-solid fa-users"></i> Colaboradores</a>
       </li>
@@ -550,7 +544,6 @@
         <a href="#" onclick="showSection('backup')"><i class="fa-solid fa-database"></i> Backup / Dados</a>
       </li>
     </ul>
-    <!-- Rodapé da Sidebar (Texto CPT Estoque em cor BRANCA) -->
     <div class="sidebar-footer">
       <div class="text-center text-light mb-2 opacity-75 fw-semibold" style="font-size: 0.72rem;">
         <i class="fa-solid fa-mobile-screen-button me-1"></i> INSTALAR APP MOBILE
@@ -565,9 +558,9 @@
       </div>
     </div>
   </nav>
+
   <!-- Page Content -->
   <div id="content">
-    <!-- Top Navbar Mobile -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light d-md-none mb-3 rounded shadow-sm">
       <div class="container-fluid">
         <button type="button" id="sidebarCollapse" class="btn btn-primary btn-sm">
@@ -576,6 +569,7 @@
         <span class="fw-bold text-primary">Sistema de Gestão de Estoque CPT</span>
       </div>
     </nav>
+    
     <!-- SEÇÃO: INÍCIO -->
     <div id="sec-inicio" class="app-section">
       <div class="p-3 mb-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center">
@@ -628,7 +622,6 @@
           </div>
         </div>
       </div>
-      <!-- Alerta de Reposição -->
       <div class="card">
         <div class="card-header header-alerta-estoque py-2">
           <i class="fa-solid fa-bell me-2"></i>Alerta de Reposição
@@ -652,6 +645,7 @@
         </div>
       </div>
     </div>
+
     <!-- SEÇÃO: DASHBOARD -->
     <div id="sec-dashboard" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -726,7 +720,8 @@
         </div>
       </div>
     </div>
-    <!-- SEÇÃO: SOLICITAR RETIRADA (MULTI-ITENS) -->
+
+    <!-- SEÇÃO: SOLICITAR RETIRADA -->
     <div id="sec-solicitacao" class="app-section d-none">
       <div class="row justify-content-center">
         <div class="col-md-9">
@@ -747,14 +742,11 @@
                   </div>
                 </div>
                 <div id="sol-feedback-usuario" class="form-text fw-bold mb-3"></div>
-                <!-- ÁREA DE MATERIAIS MULTI-ITENS -->
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <label class="form-label fw-bold m-0"><i class="fa-solid fa-boxes-stacked me-1 text-primary"></i> Materiais a Retirar *</label>
                   <button type="button" class="btn btn-outline-primary btn-sm fw-bold" onclick="adicionarLinhaMaterialSolicitacao()"><i class="fa-solid fa-plus me-1"></i> Adicionar Outro Material</button>
                 </div>
-                <div id="container-itens-solicitacao">
-                  <!-- Linhas dinâmicas de materiais adicionadas via JS -->
-                </div>
+                <div id="container-itens-solicitacao"></div>
                 <div class="mb-3 mt-3">
                   <label class="form-label fw-bold">Justificativa / Setor de Aplicação *</label>
                   <textarea id="sol-obs" rows="3" class="form-control" placeholder="Ex: Manutenção preventiva no setor B" required></textarea>
@@ -768,7 +760,8 @@
         </div>
       </div>
     </div>
-    <!-- SEÇÃO: MINHAS SOLICITAÇÕES (ACOMPANHAR STATUS PENDENTE/APROVADO/RECUSADO) -->
+
+    <!-- SEÇÃO: MINHAS SOLICITAÇÕES -->
     <div id="sec-minhas-solicitacoes" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Acompanhamento dos Meus Pedidos</h3>
@@ -799,12 +792,12 @@
                 <th>Status da Solicitação</th>
               </tr>
             </thead>
-            <tbody id="tbody-minhas-solicitacoes">
-            </tbody>
+            <tbody id="tbody-minhas-solicitacoes"></tbody>
           </table>
         </div>
       </div>
     </div>
+
     <!-- SEÇÃO: APROVAÇÕES -->
     <div id="sec-aprovacoes" class="app-section d-none">
       <h3 class="mb-3">Central de Aprovação de Retiradas</h3>
@@ -830,13 +823,13 @@
                 <th>Ações (Administradora)</th>
               </tr>
             </thead>
-            <tbody id="tbody-aprovacoes">
-            </tbody>
+            <tbody id="tbody-aprovacoes"></tbody>
           </table>
         </div>
       </div>
     </div>
-    <!-- SEÇÃO: COLABORADORES (RESTRITA EXCLUSIVAMENTE À SUA MATRÍCULA) -->
+
+    <!-- SEÇÃO: COLABORADORES -->
     <div id="sec-usuarios" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Cadastro de Colaboradores e Administradores</h3>
@@ -854,13 +847,13 @@
                 <th>Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-usuarios">
-            </tbody>
+            <tbody id="tbody-usuarios"></tbody>
           </table>
         </div>
       </div>
     </div>
-    <!-- SEÇÃO: MATERIAIS (ESTOQUE) -->
+
+    <!-- SEÇÃO: MATERIAIS -->
     <div id="sec-materiais" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3>Consulta de Estoque e Materiais</h3>
@@ -875,8 +868,7 @@
             </div>
           </div>
           <div class="col-md-5">
-            <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()">
-            </select>
+            <select id="filtro-local-material" class="form-select form-select-sm" onchange="filtrarMateriais()"></select>
           </div>
         </div>
       </div>
@@ -898,11 +890,9 @@
                 <th class="col-acoes-admin d-none">Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-materiais">
-            </tbody>
+            <tbody id="tbody-materiais"></tbody>
           </table>
         </div>
-        <!-- CONTROLES DE PAGINAÇÃO -->
         <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
           <small class="text-muted" id="page-info-materiais">Exibindo 0 de 0 itens</small>
           <div class="btn-group btn-group-sm">
@@ -912,6 +902,7 @@
         </div>
       </div>
     </div>
+
     <!-- SEÇÃO: COMPRAS -->
     <div id="sec-compras" class="app-section d-none">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -930,12 +921,12 @@
                 <th>Ações</th>
               </tr>
             </thead>
-            <tbody id="tbody-compras">
-            </tbody>
+            <tbody id="tbody-compras"></tbody>
           </table>
         </div>
       </div>
     </div>
+
     <!-- SEÇÃO: MOVIMENTAÇÃO -->
     <div id="sec-movimentacao" class="app-section d-none">
       <h3 class="mb-3">Controle de Estoque (Entradas e Saídas)</h3>
@@ -994,14 +985,14 @@
                     <th>Obs.</th>
                   </tr>
                 </thead>
-                <tbody id="tbody-movimentacoes">
-                </tbody>
+                <tbody id="tbody-movimentacoes"></tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
     </div>
+
     <!-- SEÇÃO: BACKUP E DADOS -->
     <div id="sec-backup" class="app-section d-none">
       <h3 class="mb-3">Backup e Gestão do Banco de Dados</h3>
@@ -1031,8 +1022,8 @@
       </div>
     </div>
   </div>
+
   <!-- MODAIS -->
-  <!-- Modal Colaborador / Usuário -->
   <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -1071,7 +1062,7 @@
       </div>
     </div>
   </div>
-  <!-- Modal Material -->
+
   <div class="modal fade" id="modalMaterial" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -1166,7 +1157,7 @@
       </div>
     </div>
   </div>
-  <!-- Modal Zoom Foto -->
+
   <div class="modal fade" id="modalZoomFoto" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -1180,7 +1171,7 @@
       </div>
     </div>
   </div>
-  <!-- Modal Compra -->
+
   <div class="modal fade" id="modalCompra" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -1192,8 +1183,7 @@
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Material</label>
-              <select class="form-select" id="comp-material-id" required>
-              </select>
+              <select class="form-select" id="comp-material-id" required></select>
             </div>
             <div class="mb-3">
               <label class="form-label">Quantidade</label>
@@ -1208,11 +1198,16 @@
       </div>
     </div>
   </div>
-  <!-- JS Bootstrap e Scripts da Aplicação -->
+
+  <!-- JS Bootstrap e Scripts da Aplicação com Supabase Integrado -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // CONFIGURAÇÃO DE MATRÍCULA MASTER (DIGITE A SUA MATRÍCULA REAL AQUI)
-    const MATRICULA_MASTER = 'c0676996';'81011679'
+    // 🔑 INSIRA SUAS CREDENCIAIS DO SUPABASE AQUI:
+    const SUPABASE_URL = 'https://SEU_PROJETO.supabase.co';
+    const SUPABASE_ANON_KEY = 'SUA_CHAVE_ANON_SUPABASE_AQUI';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const MATRICULA_MASTER = '81011679';
     let db = {
       config: { logo: "", sidebarIcon: "" },
       materiais: [],
@@ -1226,94 +1221,65 @@
     let chartEvolucaoInstance = null;
     let chartCategoriasInstance = null;
     let chartEntradasSaidasInstance = null;
-    let idb = null;
-    const DB_NAME = 'gestao_estoque_cpt_idb';
-    const DB_VERSION = 2;
     let ordenacaoAtual = { coluna: 'nome', asc: true };
     let paginaAtualMateriais = 1;
     const itensPorPaginaMateriais = 10;
     let materiaisFiltradosAtuais = [];
-    // INDEXEDDB
-    function initDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (e) => {
-          const dbRef = e.target.result;
-          if (!dbRef.objectStoreNames.contains('config')) dbRef.createObjectStore('config', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('materiais')) dbRef.createObjectStore('materiais', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('compras')) dbRef.createObjectStore('compras', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('movimentacoes')) dbRef.createObjectStore('movimentacoes', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('usuarios')) dbRef.createObjectStore('usuarios', { keyPath: 'id' });
-          if (!dbRef.objectStoreNames.contains('solicitacoes')) dbRef.createObjectStore('solicitacoes', { keyPath: 'id' });
-        };
-        request.onsuccess = (e) => {
-          idb = e.target.result;
-          resolve(idb);
-        };
-        request.onerror = (e) => {
-          console.error("Erro ao abrir IndexedDB", e);
-          reject(e);
-        };
-      });
-    }
-    function getAllFromStore(storeName) {
-      return new Promise((resolve) => {
-        const tx = idb.transaction(storeName, 'readonly');
-        const store = tx.objectStore(storeName);
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => resolve([]);
-      });
-    }
-    function saveToStore(storeName, item) {
-      return new Promise((resolve, reject) => {
-        const tx = idb.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        const req = store.put(item);
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-    function deleteFromStore(storeName, id) {
-      return new Promise((resolve, reject) => {
-        const tx = idb.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        const req = store.delete(id);
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
-    function clearStore(storeName) {
-      return new Promise((resolve, reject) => {
-        const tx = idb.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        const req = store.clear();
-        req.onsuccess = () => resolve();
-        req.onerror = (e) => reject(e);
-      });
-    }
+
+    // FUNÇÕES DE CONEXÃO COM O SUPABASE (Substitutas do IndexedDB)
     async function carregarDados() {
-      await initDB();
-      const configArr = await getAllFromStore('config');
-      const mainConfig = configArr.find(c => c.id === 'main');
-      db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebarIcon || "" } : { logo: "", sidebarIcon: "" };
-      db.materiais = await getAllFromStore('materiais');
-      db.compras = await getAllFromStore('compras');
-      db.movimentacoes = await getAllFromStore('movimentacoes');
-      db.usuarios = await getAllFromStore('usuarios');
-      db.solicitacoes = await getAllFromStore('solicitacoes');
-      if (!db.usuarios.some(u => u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase())) {
-        const masterUsr = {
-          id: 'usr_master',
-          matricula: MATRICULA_MASTER,
-          nome: 'Administradora Master',
-          setor: 'Almoxarifado',
-          perfil: 'ADMIN'
-        };
-        db.usuarios.push(masterUsr);
-        await saveToStore('usuarios', masterUsr);
+      try {
+        const { data: configArr } = await supabaseClient.from('config').select('*');
+        const mainConfig = (configArr || []).find(c => c.id === 'main');
+        db.config = mainConfig ? { logo: mainConfig.logo || "", sidebarIcon: mainConfig.sidebar_icon || "" } : { logo: "", sidebarIcon: "" };
+
+        const { data: matData } = await supabaseClient.from('materiais').select('*');
+        db.materiais = matData || [];
+
+        const { data: compData } = await supabaseClient.from('compras').select('*');
+        db.compras = compData || [];
+
+        const { data: movData } = await supabaseClient.from('movimentacoes').select('*');
+        db.movimentacoes = movData || [];
+
+        const { data: usrData } = await supabaseClient.from('usuarios').select('*');
+        db.usuarios = usrData || [];
+
+        const { data: solData } = await supabaseClient.from('solicitacoes').select('*');
+        db.solicitacoes = solData || [];
+
+        if (!db.usuarios.some(u => u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase())) {
+          const masterUsr = {
+            id: 'usr_master',
+            matricula: MATRICULA_MASTER,
+            nome: 'Administradora Master',
+            setor: 'Almoxarifado',
+            perfil: 'ADMIN'
+          };
+          db.usuarios.push(masterUsr);
+          await saveToStore('usuarios', masterUsr);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados do Supabase:", err);
       }
     }
+
+    async function saveToStore(storeName, item) {
+      try {
+        await supabaseClient.from(storeName).upsert([item]);
+      } catch (err) {
+        console.error(`Erro ao salvar em ${storeName}:`, err);
+      }
+    }
+
+    async function deleteFromStore(storeName, id) {
+      try {
+        await supabaseClient.from(storeName).delete().eq('id', id);
+      } catch (err) {
+        console.error(`Erro ao deletar de ${storeName}:`, err);
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       await carregarDados();
       setupResponsiveSidebar();
@@ -1321,12 +1287,14 @@
       renderLogoSistema();
       autenticarPorMatricula('');
     });
+
     function setupResponsiveSidebar() {
-      document.getElementById('sidebarCollapse').addEventListener('click', () => {
+      document.getElementById('sidebarCollapse')?.addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('active');
         document.getElementById('content').classList.toggle('active');
       });
     }
+
     function setupPWA() {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
@@ -1363,6 +1331,7 @@
         navigator.serviceWorker.register(swURL).catch(() => {});
       }
     }
+
     function instalarPWA() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -1376,7 +1345,7 @@
         alert("Para instalar no celular:\n\nAndroid (Chrome): Abra o menu do navegador e toque em 'Adicionar à Tela Inicial'.\n\niOS (Safari): Toque em 'Compartilhar' e escolha 'Adicionar à Tela de Início'.");
       }
     }
-    // AUTENTICAÇÃO POR MATRÍCULA
+
     function autenticarPorMatricula(matricula) {
       const matClean = (matricula || '').trim().toLowerCase();
       const infoDiv = document.getElementById('sessao-user-info');
@@ -1393,6 +1362,7 @@
       }
       atualizarInterfacePorPerfil();
     }
+
     function atualizarInterfacePorPerfil() {
       const isAdmin = usuarioLogado && usuarioLogado.perfil === 'ADMIN';
       const isMaster = usuarioLogado && usuarioLogado.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase();
@@ -1417,18 +1387,20 @@
         showSection('inicio');
       }
     }
+
     async function alterarLogoSistema(input) {
       if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = async function(e) {
           if(!db.config) db.config = {};
           db.config.logo = e.target.result;
-          await saveToStore('config', { id: 'main', logo: db.config.logo, sidebarIcon: db.config.sidebarIcon || "" });
+          await saveToStore('config', { id: 'main', logo: db.config.logo, sidebar_icon: db.config.sidebarIcon || "" });
           renderLogoSistema();
         };
         reader.readAsDataURL(input.files[0]);
       }
     }
+
     function renderLogoSistema() {
       const imgElement = document.getElementById('img-logo-sistema');
       const placeholder = document.getElementById('placeholder-logo-sistema');
@@ -1441,6 +1413,7 @@
         placeholder.style.display = 'block';
       }
     }
+
     function toggleCamposEpi() {
       const tipo = document.getElementById('mat-tipo-classificacao').value;
       const caInput = document.getElementById('mat-ca');
@@ -1457,6 +1430,7 @@
         valInput.disabled = true;
       }
     }
+
     function showSection(sectionId) {
       document.querySelectorAll('.app-section').forEach(sec => sec.classList.add('d-none'));
       document.querySelectorAll('#sidebar ul li').forEach(li => li.classList.remove('active'));
@@ -1478,7 +1452,7 @@
       if(sectionId === 'compras') renderCompras();
       if(sectionId === 'movimentacao') renderMovimentacao();
     }
-    // INÍCIO
+
     function renderInicio() {
       const totalMateriais = db.materiais.length;
       const estoqueCritico = db.materiais.filter(m => Number(m.qtd) < Number(m.min));
@@ -1499,7 +1473,7 @@
         tbody.innerHTML = `<tr><td colspan="7" class="text-center text-success py-2"><i class="fa-solid fa-circle-check me-1"></i> Todos os estoques estão com nível normal!</td></tr>`;
       } else {
         estoqueCritico.forEach(m => {
-          const comprasDoMaterial = db.compras.filter(c => (c.materialId === m.id || c.materialId === m.codigo) && c.status === 'Pendente');
+          const comprasDoMaterial = db.compras.filter(c => (c.materialId === m.id || c.codigo === m.codigo || c.material_id === m.id) && c.status === 'Pendente');
           let compraBadge = `<span class="badge bg-secondary">Não</span>`;
           if (comprasDoMaterial.length > 0) {
             const totalQtdCompra = comprasDoMaterial.reduce((acc, curr) => acc + Number(curr.qtd), 0);
@@ -1519,7 +1493,7 @@
         });
       }
     }
-    // SOLICITAÇÕES DE RETIRADA (SUPORTE A MULTI-ITENS)
+
     function carregarSelectSolicitacao() {
       const container = document.getElementById('container-itens-solicitacao');
       container.innerHTML = '';
@@ -1529,6 +1503,7 @@
         validarMatriculaSolicitante(usuarioLogado.matricula);
       }
     }
+
     function adicionarLinhaMaterialSolicitacao() {
       const container = document.getElementById('container-itens-solicitacao');
       const idLinha = Date.now().toString() + Math.random().toString(36).substring(2, 5);
@@ -1545,27 +1520,24 @@
           <div class="row g-2 align-items-end">
             <div class="col-md-7">
               <label class="form-label form-label-sm fw-semibold mb-1">Item #${qtdLinhas + 1}</label>
-              <select class="form-select form-select-sm sol-item-material" required>
-                ${optionsMateriais}
-              </select>
+              <select class="form-select form-select-sm sol-item-material" required>${optionsMateriais}</select>
             </div>
             <div class="col-md-3 col-8">
               <label class="form-label form-label-sm fw-semibold mb-1">Quantidade</label>
               <input type="number" min="1" class="form-control form-control-sm sol-item-qtd" placeholder="1" required>
             </div>
-            <div class="col-md-2 col-4 text-end">
-              ${btnRemover}
-            </div>
+            <div class="col-md-2 col-4 text-end">${btnRemover}</div>
           </div>
         </div>
       `;
       container.insertAdjacentHTML('beforeend', htmlRow);
     }
+
     function removerLinhaMaterialSolicitacao(idLinha) {
       const el = document.getElementById(`linha-sol-${idLinha}`);
       if (el) el.remove();
     }
-    // BUSCA NOME DO SOLICITANTE PELA MATRÍCULA
+
     function validarMatriculaSolicitante(matriculaDigitada) {
       const feedback = document.getElementById('sol-feedback-usuario');
       const inputNome = document.getElementById('sol-nome-solicitante');
@@ -1585,6 +1557,7 @@
         feedback.innerText = `ℹ️ Matrícula não cadastrada no sistema. Digite seu nome completo ao lado.`;
       }
     }
+
     async function salvarSolicitacao(e) {
       e.preventDefault();
       const matricula = document.getElementById('sol-matricula').value.trim();
@@ -1620,8 +1593,8 @@
         id: Date.now().toString(),
         data: new Date().toLocaleString('pt-BR'),
         solicitanteId: usr ? usr.id : 'visitante',
-        solicitanteNome: nomeFinal,
-        solicitanteMatricula: matricula,
+        solicitante_nome: nomeFinal,
+        solicitante_matricula: matricula,
         itens: itensSolicitados,
         obs: obs,
         status: 'Pendente'
@@ -1634,7 +1607,7 @@
       carregarSelectSolicitacao();
       renderInicio();
     }
-    // MINHAS SOLICITAÇÕES (VISÃO DO SOLICITANTE)
+
     function renderMinhasSolicitacoes() {
       const tbody = document.getElementById('tbody-minhas-solicitacoes');
       const inputFiltroMat = document.getElementById('filtro-minha-matricula');
@@ -1643,7 +1616,7 @@
       }
       const matBusca = (inputFiltroMat.value || '').trim().toLowerCase();
       tbody.innerHTML = '';
-      const minhas = db.solicitacoes.filter(s => (s.solicitanteMatricula || '').toLowerCase().includes(matBusca));
+      const minhas = db.solicitacoes.filter(s => (s.solicitanteMatricula || s.solicitante_matricula || '').toLowerCase().includes(matBusca));
       if (minhas.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada para a matrícula informada.</td></tr>`;
         return;
@@ -1658,10 +1631,12 @@
         } else {
           listaMateriaisHTML = `• <strong>${s.materialNome || 'Material'}</strong>: ${s.qtd || 1}`;
         }
+        const nomeSol = s.solicitanteNome || s.solicitante_nome || '';
+        const matSol = s.solicitanteMatricula || s.solicitante_matricula || '';
         tbody.innerHTML += `
           <tr>
             <td><small>${s.data}</small></td>
-            <td><strong>${s.solicitanteNome}</strong><br><small class="text-muted">Matrícula: ${s.solicitanteMatricula}</small></td>
+            <td><strong>${nomeSol}</strong><br><small class="text-muted">Matrícula: ${matSol}</small></td>
             <td>${listaMateriaisHTML}</td>
             <td><small>${s.obs}</small></td>
             <td>${badgeStatus}</td>
@@ -1669,7 +1644,7 @@
         `;
       });
     }
-    // APROVAÇÕES (ADMINISTRADORA)
+
     function renderAprovacoes() {
       const tbody = document.getElementById('tbody-aprovacoes');
       const filtro = document.getElementById('filtro-status-aprovacao').value;
@@ -1699,10 +1674,12 @@
         } else {
           listaMateriaisHTML = `• <strong>${s.materialNome || 'Material'}</strong>: ${s.qtd || 1}`;
         }
+        const nomeSol = s.solicitanteNome || s.solicitante_nome || '';
+        const matSol = s.solicitanteMatricula || s.solicitante_matricula || '';
         tbody.innerHTML += `
           <tr>
             <td><small>${s.data}</small></td>
-            <td><strong>${s.solicitanteNome || 'Não informado'}</strong><br><small class="text-muted"><i class="fa-solid fa-id-badge me-1"></i>Matrícula: ${s.solicitanteMatricula}</small></td>
+            <td><strong>${nomeSol || 'Não informado'}</strong><br><small class="text-muted"><i class="fa-solid fa-id-badge me-1"></i>Matrícula: ${matSol}</small></td>
             <td>${listaMateriaisHTML}</td>
             <td><small>${s.obs}</small></td>
             <td>${badgeStatus}</td>
@@ -1711,9 +1688,13 @@
         `;
       });
     }
+
     async function processarAprovacao(idSolicitacao, aprovar) {
       const sol = db.solicitacoes.find(s => s.id === idSolicitacao);
       if (!sol) return;
+      const nomeSol = sol.solicitanteNome || sol.solicitante_nome || '';
+      const matSol = sol.solicitanteMatricula || sol.solicitante_matricula || '';
+
       if (aprovar) {
         const itensParaDarBaixa = sol.itens && Array.isArray(sol.itens) 
           ? sol.itens 
@@ -1732,16 +1713,16 @@
             id: Date.now().toString() + Math.random().toString(36).substring(2, 4),
             data: new Date().toLocaleString('pt-BR'),
             tipo: 'SAIDA',
-            materialId: mat.id,
+            material_id: mat.id,
             qtd: item.qtd,
-            obs: `Retirada Aprovada - Solicitante: ${sol.solicitanteNome} (${sol.solicitanteMatricula})`
+            obs: `Retirada Aprovada - Solicitante: ${nomeSol} (${matSol})`
           };
           db.movimentacoes.unshift(movData);
           await saveToStore('movimentacoes', movData);
         }
         sol.status = 'Aprovado';
         await saveToStore('solicitacoes', sol);
-        alert(`Solicitação de ${sol.solicitanteNome} aprovada com sucesso! Itens baixados do estoque.`);
+        alert(`Solicitação de ${nomeSol} aprovada com sucesso! Itens baixados do estoque.`);
       } else {
         sol.status = 'Recusado';
         await saveToStore('solicitacoes', sol);
@@ -1750,7 +1731,7 @@
       renderAprovacoes();
       renderInicio();
     }
-    // GESTÃO DE COLABORADORES
+
     function renderUsuarios() {
       const tbody = document.getElementById('tbody-usuarios');
       tbody.innerHTML = '';
@@ -1773,10 +1754,12 @@
         `;
       });
     }
+
     function openUsuarioModal() {
       document.getElementById('form-usuario').reset();
       new bootstrap.Modal(document.getElementById('modalUsuario')).show();
     }
+
     async function salvarUsuario(e) {
       e.preventDefault();
       const matricula = document.getElementById('usr-matricula').value.trim();
@@ -1799,6 +1782,7 @@
       renderUsuarios();
       alert('Colaborador cadastrado com sucesso!');
     }
+
     async function excluirUsuario(id) {
       const u = db.usuarios.find(item => item.id === id);
       if (u && u.matricula.toLowerCase() === MATRICULA_MASTER.toLowerCase()) {
@@ -1810,7 +1794,7 @@
         renderUsuarios();
       }
     }
-    // DASHBOARD
+
     function carregarSelectDashboard() {
       const selectMat = document.getElementById('dash-select-material');
       const datalistDash = document.getElementById('list-materiais-dashboard');
@@ -1836,6 +1820,7 @@
         document.getElementById('dash-input-search').value = `${db.materiais[0].nome} (Cód: ${db.materiais[0].codigo || db.materiais[0].id})`;
       }
     }
+
     function selecionarMaterialViaSearch(valorDigitado) {
       const termo = valorDigitado.trim().toLowerCase();
       const matEncontrado = db.materiais.find(m => {
@@ -1847,6 +1832,7 @@
         renderDashboardCharts();
       }
     }
+
     function renderDashboardCharts() {
       const totalItens = db.materiais.length;
       const totalUnidades = db.materiais.reduce((acc, m) => acc + Number(m.qtd), 0);
@@ -1856,6 +1842,7 @@
       document.getElementById('dash-kpi-total-unidades').innerText = totalUnidades;
       document.getElementById('dash-kpi-alertas').innerText = totalAlertas;
       document.getElementById('dash-kpi-total-movs').innerText = totalMovs;
+
       const selectMat = document.getElementById('dash-select-material');
       const matId = selectMat.value;
       const mat = db.materiais.find(m => m.id === matId);
@@ -1865,7 +1852,8 @@
         const movsComEstoqueReverso = [];
         for (let i = db.movimentacoes.length - 1; i >= 0; i--) {
           const m = db.movimentacoes[i];
-          if (m.materialId === mat.id || m.materialId === mat.codigo || (m.materialId || '').toLowerCase() === mat.nome.toLowerCase()) {
+          const mMatId = m.materialId || m.material_id;
+          if (mMatId === mat.id || mMatId === mat.codigo || (mMatId || '').toLowerCase() === mat.nome.toLowerCase()) {
             movsComEstoqueReverso.unshift({ ...m });
           }
         }
@@ -1931,11 +1919,12 @@
           }
         });
       }
+
       const ctxCategorias = document.getElementById('chartCategorias').getContext('2d');
       if (chartCategoriasInstance) chartCategoriasInstance.destroy();
       const contagemCategorias = {};
       db.materiais.forEach(m => {
-        const cat = m.tipoClassificacao || 'DIVERSOS';
+        const cat = m.tipoClassificacao || m.tipo_classificacao || 'DIVERSOS';
         contagemCategorias[cat] = (contagemCategorias[cat] || 0) + 1;
       });
       const labelsCategorias = Object.keys(contagemCategorias);
@@ -1957,6 +1946,7 @@
           plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
         }
       });
+
       const ctxEntradasSaidas = document.getElementById('chartEntradasSaidas').getContext('2d');
       if (chartEntradasSaidasInstance) chartEntradasSaidasInstance.destroy();
       const totalEntradas = db.movimentacoes.filter(m => m.tipo === 'ENTRADA').reduce((acc, m) => acc + Number(m.qtd), 0);
@@ -1978,6 +1968,7 @@
         }
       });
     }
+
     function previewImageInput(input) {
       if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -2007,11 +1998,13 @@
         reader.readAsDataURL(file);
       }
     }
+
     function zoomFoto(src, nome) {
       document.getElementById('imgZoomModal').src = src;
       document.getElementById('modalZoomTitle').innerText = nome;
       new bootstrap.Modal(document.getElementById('modalZoomFoto')).show();
     }
+
     function carregarFiltroLocais() {
       const selectLocal = document.getElementById('filtro-local-material');
       const locaisUnicos = [...new Set(db.materiais.map(m => m.local).filter(l => l && l.trim() !== ''))];
@@ -2020,7 +2013,7 @@
         selectLocal.innerHTML += `<option value="${loc}">${loc}</option>`;
       });
     }
-    // ORDENAÇÃO DE MATERIAIS
+
     function ordenarMateriais(coluna) {
       if (ordenacaoAtual.coluna === coluna) {
         ordenacaoAtual.asc = !ordenacaoAtual.asc;
@@ -2035,6 +2028,7 @@
       }
       filtrarMateriais();
     }
+
     function filtrarMateriais() {
       const termoBusca = document.getElementById('filtro-nome-material').value.toLowerCase().trim();
       const localSel = document.getElementById('filtro-local-material').value;
@@ -2058,10 +2052,12 @@
       paginaAtualMateriais = 1;
       renderTabelaMateriais();
     }
+
     function renderMateriais() {
       carregarFiltroLocais();
       filtrarMateriais();
     }
+
     function renderTabelaMateriais() {
       const tbody = document.getElementById('tbody-materiais');
       tbody.innerHTML = '';
@@ -2088,12 +2084,14 @@
         const isCritico = Number(m.qtd) < Number(m.min);
         const badge = isCritico ? `<span class="badge badge-low-stock"><i class="fa-solid fa-triangle-exclamation me-1"></i>Crítico (${m.qtd})</span>` : `<span class="badge badge-ok-stock">${m.qtd}</span>`;
         const fotoElement = m.foto ? `<img src="${m.foto}" class="img-thumbnail-preview" onclick="zoomFoto('${m.foto}', '${m.nome}')" title="Clique para ampliar">` : `<span class="text-muted"><i class="fa-solid fa-image text-secondary opacity-50 fs-4"></i></span>`;
-        let tipoBadge = `<span class="badge bg-light text-dark border">${m.tipoClassificacao || 'Diversos'}</span>`;
-        if (m.tipoClassificacao === 'EPI') tipoBadge = `<span class="badge badge-epi">EPI</span>`;
-        if (m.tipoClassificacao === 'ALIMENTACAO') tipoBadge = `<span class="badge bg-warning text-dark">Alimentação</span>`;
-        const caTexto = (m.tipoClassificacao === 'EPI') ? `<strong>${m.ca || 'N/A'}</strong>` : `<span class="text-muted">N/A</span>`;
+        
+        const tipoClass = m.tipoClassificacao || m.tipo_classificacao;
+        let tipoBadge = `<span class="badge bg-light text-dark border">${tipoClass || 'Diversos'}</span>`;
+        if (tipoClass === 'EPI') tipoBadge = `<span class="badge badge-epi">EPI</span>`;
+        if (tipoClass === 'ALIMENTACAO') tipoBadge = `<span class="badge bg-warning text-dark">Alimentação</span>`;
+        const caTexto = (tipoClass === 'EPI') ? `<strong>${m.ca || 'N/A'}</strong>` : `<span class="text-muted">N/A</span>`;
         let valTexto = '<span class="text-muted">N/A</span>';
-        if (m.tipoClassificacao === 'EPI' && m.validade && m.validade !== 'N/A') {
+        if (tipoClass === 'EPI' && m.validade && m.validade !== 'N/A') {
           valTexto = new Date(m.validade + 'T00:00:00').toLocaleDateString('pt-BR');
         }
         const tdAcoesAdmin = isAdmin ? `
@@ -2121,10 +2119,12 @@
       document.getElementById('btn-page-prev').disabled = paginaAtualMateriais === 1;
       document.getElementById('btn-page-next').disabled = paginaAtualMateriais === totalPaginas;
     }
+
     function mudarPaginaMateriais(delta) {
       paginaAtualMateriais += delta;
       renderTabelaMateriais();
     }
+
     function verificarNomeDuplicado(nomeDigitado) {
       const alertaEl = document.getElementById('alerta-nome-duplicado');
       const idOriginal = document.getElementById('mat-id-original').value;
@@ -2140,6 +2140,7 @@
         alertaEl.innerText = '';
       }
     }
+
     function buscarSugestaoCodigo(valorDigitado) {
       const helpEl = document.getElementById('sugestao-codigo-help');
       const termo = valorDigitado.trim().toLowerCase();
@@ -2158,6 +2159,7 @@
         helpEl.innerText = '';
       }
     }
+
     function openMaterialModal(id = null) {
       document.getElementById('mat-foto-input').value = '';
       document.getElementById('sugestao-codigo-help').innerText = '';
@@ -2168,7 +2170,7 @@
         document.getElementById('mat-id-original').value = m.id;
         document.getElementById('mat-codigo').value = m.codigo || m.id;
         document.getElementById('mat-nome').value = m.nome;
-        document.getElementById('mat-tipo-classificacao').value = m.tipoClassificacao || 'DIVERSOS';
+        document.getElementById('mat-tipo-classificacao').value = m.tipoClassificacao || m.tipo_classificacao || 'DIVERSOS';
         document.getElementById('mat-ca').value = m.ca || '';
         document.getElementById('mat-validade').value = m.validade || '';
         document.getElementById('mat-local').value = m.local || '';
@@ -2195,6 +2197,7 @@
       }
       new bootstrap.Modal(document.getElementById('modalMaterial')).show();
     }
+
     async function salvarMaterial(e) {
       e.preventDefault();
       const idOriginal = document.getElementById('mat-id-original').value;
@@ -2213,7 +2216,7 @@
         id: idOriginal || novoCodigo,
         codigo: novoCodigo,
         nome: novoNome,
-        tipoClassificacao: tipoClassificacao,
+        tipo_classificacao: tipoClassificacao,
         ca: tipoClassificacao === 'EPI' ? document.getElementById('mat-ca').value : 'N/A',
         validade: tipoClassificacao === 'EPI' ? document.getElementById('mat-validade').value : 'N/A',
         local: document.getElementById('mat-local').value,
@@ -2233,9 +2236,11 @@
       renderMateriais();
       renderInicio();
     }
+
     function editarMaterial(id) {
       openMaterialModal(id);
     }
+
     async function excluirMaterial(id) {
       if (confirm("Tem certeza que deseja excluir este material?")) {
         db.materiais = db.materiais.filter(m => m.id !== id);
@@ -2244,12 +2249,13 @@
         renderInicio();
       }
     }
-    // COMPRAS
+
     function renderCompras() {
       const tbody = document.getElementById('tbody-compras');
       tbody.innerHTML = '';
       db.compras.forEach(c => {
-        const mat = db.materiais.find(m => m.id === c.materialId || m.codigo === c.materialId);
+        const matIdVal = c.materialId || c.material_id;
+        const mat = db.materiais.find(m => m.id === matIdVal || m.codigo === matIdVal);
         const statusBadge = c.status === 'Pendente' ? `<span class="badge bg-warning text-dark">Pendente</span>` : `<span class="badge bg-success">Recebido</span>`;
         let btnAcao = c.status === 'Pendente' 
           ? `<button class="btn btn-sm btn-success me-1" onclick="receberCompra('${c.id}')"><i class="fa-solid fa-box-open me-1"></i> Receber</button>
@@ -2266,12 +2272,14 @@
         `;
       });
     }
+
     function openCompraModal() {
       const selectMat = document.getElementById('comp-material-id');
       selectMat.innerHTML = '';
       db.materiais.forEach(m => selectMat.innerHTML += `<option value="${m.id}">${m.nome} (${m.unidade || 'UN'})</option>`);
       new bootstrap.Modal(document.getElementById('modalCompra')).show();
     }
+
     async function salvarCompra(e) {
       e.preventDefault();
       const matId = document.getElementById('comp-material-id').value;
@@ -2279,7 +2287,7 @@
       const novaOrdem = {
         id: Date.now().toString(),
         data: new Date().toISOString().slice(0, 10),
-        materialId: matId,
+        material_id: matId,
         qtd: qtd,
         status: 'Pendente'
       };
@@ -2289,13 +2297,15 @@
       renderCompras();
       renderInicio();
     }
+
     async function receberCompra(compraId) {
       const compra = db.compras.find(c => c.id === compraId);
       if (!compra) return;
       if (confirm("Confirmar o recebimento desta ordem de compra? O estoque do material será atualizado automaticamente.")) {
         compra.status = 'Concluído';
         await saveToStore('compras', compra);
-        const mat = db.materiais.find(m => m.id === compra.materialId || m.codigo === compra.materialId);
+        const matIdVal = compra.materialId || compra.material_id;
+        const mat = db.materiais.find(m => m.id === matIdVal || m.codigo === matIdVal);
         if (mat) {
           mat.qtd = Number(mat.qtd) + Number(compra.qtd);
           await saveToStore('materiais', mat);
@@ -2304,7 +2314,7 @@
           id: Date.now().toString(),
           data: new Date().toLocaleString('pt-BR'),
           tipo: 'ENTRADA',
-          materialId: mat ? mat.id : compra.materialId,
+          material_id: mat ? mat.id : matIdVal,
           qtd: compra.qtd,
           obs: `Recebimento Ordem Compra #${compra.id}`
         };
@@ -2314,6 +2324,7 @@
         renderInicio();
       }
     }
+
     async function excluirCompra(compraId) {
       if (confirm("Deseja realmente excluir esta ordem de compra lançada por engano?")) {
         db.compras = db.compras.filter(c => c.id !== compraId);
@@ -2322,7 +2333,7 @@
         renderInicio();
       }
     }
-    // MOVIMENTAÇÕES
+
     function parseDataPtBr(dataStr) {
       if (!dataStr) return 0;
       if (dataStr.includes('-')) {
@@ -2339,6 +2350,7 @@
       }
       return 0;
     }
+
     function renderMovimentacao() {
       const datalist = document.getElementById('list-materiais-movimentacao');
       datalist.innerHTML = '';
@@ -2354,7 +2366,8 @@
       const tbody = document.getElementById('tbody-movimentacoes');
       tbody.innerHTML = '';
       const filtradas = movimentacoesOrdenadas.filter(m => {
-        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
+        const matIdVal = m.materialId || m.material_id;
+        const mat = db.materiais.find(item => item.id === matIdVal || item.codigo === matIdVal || item.nome.toLowerCase() === (matIdVal || '').toLowerCase());
         const nomeMat = mat ? mat.nome.toLowerCase() : 'material excluído';
         const obsText = (m.obs || '').toLowerCase();
         return nomeMat.includes(termoHist) || obsText.includes(termoHist);
@@ -2364,7 +2377,8 @@
         return;
       }
       filtradas.forEach(m => {
-        const mat = db.materiais.find(item => item.id === m.materialId || item.codigo === m.materialId || item.nome.toLowerCase() === (m.materialId || '').toLowerCase());
+        const matIdVal = m.materialId || m.material_id;
+        const mat = db.materiais.find(item => item.id === matIdVal || item.codigo === matIdVal || item.nome.toLowerCase() === (matIdVal || '').toLowerCase());
         const badgeTipo = m.tipo === 'ENTRADA' ? `<span class="badge bg-success"><i class="fa-solid fa-arrow-down me-1"></i>Entrada</span>` : `<span class="badge bg-danger"><i class="fa-solid fa-arrow-up me-1"></i>Saída</span>`;
         tbody.innerHTML += `
           <tr>
@@ -2377,6 +2391,7 @@
         `;
       });
     }
+
     async function salvarMovimentacaoComTipo(tipo) {
       const nomeInput = document.getElementById('mov-material-input').value.trim();
       const qtdInput = document.getElementById('mov-quantidade');
@@ -2411,7 +2426,7 @@
         id: Date.now().toString(),
         data: new Date().toLocaleString('pt-BR'),
         tipo: tipo,
-        materialId: mat.id,
+        material_id: mat.id,
         qtd: qtd,
         obs: obs
       };
@@ -2424,7 +2439,7 @@
       renderInicio();
       alert(`Movimentação de ${tipo} registrada com sucesso para: ${mat.nome}!`);
     }
-    // BACKUP E EXCEL
+
     function exportarExcelEstoque() {
       if (!db.materiais || db.materiais.length === 0) {
         alert("Não há materiais cadastrados para exportar.");
@@ -2433,7 +2448,7 @@
       const dadosExcel = db.materiais.map(m => ({
         "Código": m.codigo || m.id,
         "Nome do Material": m.nome,
-        "Tipo": m.tipoClassificacao || "DIVERSOS",
+        "Tipo": m.tipoClassificacao || m.tipo_classificacao || "DIVERSOS",
         "Local de Armazenamento": m.local || "-",
         "Qtd. Atual": m.qtd,
         "Qtd. Mínima": m.min,
@@ -2447,6 +2462,7 @@
       const dataAtual = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(workbook, `Estoque_Atual_CPT_${dataAtual}.xlsx`);
     }
+
     function exportarBackup() {
       const jsonString = JSON.stringify(db, null, 2);
       const blob = new Blob([jsonString], { type: "application/json" });
@@ -2459,7 +2475,8 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
-    function importarBackup() {
+
+    async function importarBackup() {
       const fileInput = document.getElementById('file-import');
       if (!fileInput.files.length) {
         alert("Selecione um arquivo de backup (.json) primeiro.");
@@ -2470,31 +2487,48 @@
       reader.onload = async function(e) {
         try {
           const importedData = JSON.parse(e.target.result);
-          if (importedData.materiais) {
-            await clearStore('config');
-            await clearStore('materiais');
-            await clearStore('compras');
-            await clearStore('movimentacoes');
-            await clearStore('usuarios');
-            await clearStore('solicitacoes');
-            if (importedData.config) await saveToStore('config', { id: 'main', ...importedData.config });
-            if (importedData.materiais) { for (const item of importedData.materiais) await saveToStore('materiais', item); }
-            if (importedData.compras) { for (const item of importedData.compras) await saveToStore('compras', item); }
-            if (importedData.movimentacoes) { for (const item of importedData.movimentacoes) await saveToStore('movimentacoes', item); }
-            if (importedData.usuarios) { for (const item of importedData.usuarios) await saveToStore('usuarios', item); }
-            if (importedData.solicitacoes) { for (const item of importedData.solicitacoes) await saveToStore('solicitacoes', item); }
-            alert("Backup restaurado com sucesso!");
-            location.reload();
+          if (importedData && (importedData.materiais || importedData.usuarios || importedData.solicitacoes)) {
+            if (confirm("Deseja realmente restaurar os dados do backup e enviá-los para o Supabase?")) {
+              db.config = importedData.config || db.config;
+              db.materiais = importedData.materiais || [];
+              db.compras = importedData.compras || [];
+              db.movimentacoes = importedData.movimentacoes || [];
+              db.usuarios = importedData.usuarios || [];
+              db.solicitacoes = importedData.solicitacoes || [];
+
+              if (db.config) {
+                await saveToStore('config', { id: 'main', logo: db.config.logo || '', sidebar_icon: db.config.sidebarIcon || '' });
+              }
+              if (db.materiais.length > 0) {
+                for (const item of db.materiais) { await saveToStore('materiais', item); }
+              }
+              if (db.compras.length > 0) {
+                for (const item of db.compras) { await saveToStore('compras', item); }
+              }
+              if (db.movimentacoes.length > 0) {
+                for (const item of db.movimentacoes) { await saveToStore('movimentacoes', item); }
+              }
+              if (db.usuarios.length > 0) {
+                for (const item of db.usuarios) { await saveToStore('usuarios', item); }
+              }
+              if (db.solicitacoes.length > 0) {
+                for (const item of db.solicitacoes) { await saveToStore('solicitacoes', item); }
+              }
+
+              alert("Backup restaurado e sincronizado com o Supabase com sucesso!");
+              location.reload();
+            }
           } else {
             alert("O arquivo fornecido é inválido ou incompatível.");
           }
         } catch (err) {
-          alert("Erro ao ler o arquivo JSON de backup.");
+          console.error("Erro na restauração:", err);
+          alert("Erro ao processar o arquivo JSON de backup.");
         }
       };
       reader.readAsText(file);
     }
   </script>
-  <script src ="melhoria.js"></script>
 </body>
 </html>
+
