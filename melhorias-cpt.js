@@ -672,6 +672,49 @@ importarBackup = async function () {
   location.reload();
 };
 
+/* ---------- Minhas Solicitações: só as da matrícula informada ---------- */
+function renderMinhasSolicitacoes() {
+  const tbody = document.getElementById('tbody-minhas-solicitacoes');
+  const inp = document.getElementById('filtro-minha-matricula');
+  if (usuarioLogado && usuarioLogado.matricula && !inp.value) inp.value = usuarioLogado.matricula;
+  const mat = (inp.value || '').trim().toLowerCase();
+  if (!mat) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Digite sua matrícula para ver as suas solicitações.</td></tr>';
+    return;
+  }
+  const minhas = db.solicitacoes.filter(x =>
+    String(x.solicitanteMatricula || x.solicitante_matricula || '').trim().toLowerCase() === mat);
+  if (minhas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Nenhuma solicitação encontrada para a matrícula informada.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = minhas.map(x => {
+    let badge = '<span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Pendente</span>';
+    if (x.status === 'Aprovado') badge = '<span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i>Aprovada</span>';
+    if (x.status === 'Recusado') badge = '<span class="badge bg-danger"><i class="fa-solid fa-xmark-circle me-1"></i>Recusada</span>';
+    const itens = Array.isArray(x.itens)
+      ? x.itens.map(i => `• <strong>${_esc(i.materialNome)}</strong>: ${i.qtd} ${i.unidade || 'UN'}`).join('<br>')
+      : `• <strong>${_esc(x.materialNome || 'Material')}</strong>: ${x.qtd || 1}`;
+    const nome = x.solicitanteNome || x.solicitante_nome || '';
+    const m = x.solicitanteMatricula || x.solicitante_matricula || '';
+    return `<tr>
+      <td><small>${x.data}</small></td>
+      <td><strong>${_esc(nome)}</strong><br><small class="text-muted">Matrícula: ${_esc(m)}</small></td>
+      <td>${itens}</td>
+      <td><small>${_esc(x.obs)}</small></td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Após enviar um pedido, o filtro já fica na matrícula de quem solicitou
+const _salvarSolOrig = salvarSolicitacao;
+salvarSolicitacao = async function (e) {
+  const mat = (document.getElementById('sol-matricula').value || '').trim();
+  await _salvarSolOrig(e);
+  if (mat) document.getElementById('filtro-minha-matricula').value = mat;
+};
+
 /* ---------- Partida: abre direto em Solicitar Retirada ---------- */
 autenticarPorMatricula('');
 
