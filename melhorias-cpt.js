@@ -129,8 +129,12 @@ function _rodape(p, k) {
 /* ---------- 2, 3 e 4: acesso de administrador ---------- */
 const _carregarDadosOrig = carregarDados;
 carregarDados = async function () {
-  await _carregarDadosOrig();
-  await garantirAdmins();
+  _silencio = true;
+  try {
+    await _diagnosticarSupabase();
+    await _carregarDadosOrig();
+    await garantirAdmins();
+  } finally { _silencio = false; _filaAvisos.length = 0; }
 };
 
 async function garantirAdmins() {
@@ -531,5 +535,143 @@ function renderInicio() {
   _rodape(p, 'alertas');
 }
 
+/* ---------- Sincronização com o Supabase (diagnóstico, gravação e importação) ---------- */
+const _TABELAS = ['config', 'materiais', 'compras', 'movimentacoes', 'usuarios', 'solicitacoes'];
+let _silencio = false, _supabaseOk = true;
+const _filaAvisos = [], _avisados = new Set();
+
+function _avisar(msg) {
+  _filaAvisos.push(msg);
+  if (_silencio || _avisados.has(msg)) return;
+  _avisados.add(msg);
+  alert(msg);
+}
+const _toSnake = k => k.replace(/[A-Z]/g, c => '_' + c.toLowerCase());
+
+// Grava linhas adaptando-se ao esquema: renomeia camelCase -> snake_case ou descarta colunas inexistentes.
+async function _upsertAdaptativo(tabela, itens) {
+  let linhas = itens.map(x => ({ ...x }));
+  for (let tent = 0; tent < 20; tent++) {
+    const { error } = await supabaseClient.from(tabela).upsert(linhas);
+    if (!error) return null;
+    const m = /Could not find the '([^']+)' column/.exec(error.message || '');
+    if (!m) return error;
+    const col = m[1], snake = _toSnake(col);
+    let descartou = false;
+    linhas = linhas.map(l => {
+      if (!(col in l)) return l;
+      const c = { ...l };
+      const v = c[col]; delete c[col];
+      if (snake !== col && !(snake in c)) c[snake] = v; else descartou = true;
+      return c;
+    });
+    if (descartou) _avisar(`A coluna "${col}" não existe na tabela "${tabela}" do Supabase; esse campo não foi gravado. Crie a coluna para não perder a informação.`);
+  }
+  return { message: 'Muitas colunas inexistentes na tabela ' + tabela };
+}
+
+function _erroLegivel(tabela, err) {
+  let msg = `Falha ao gravar em "${tabela}" no Supabase: ${err.message || err}`;
+  if (err.code === '42501' || /row-level security/i.test(err.message || ''))
+    msg += '\n\nO Supabase está bloqueando a gravação (RLS). É preciso criar uma política de acesso para a tabela.';
+  return msg;
+}
+
+saveToStore = async function (tabela, item) {
+  try {
+    const err = await _upsertAdaptativo(tabela, [item]);
+    if (err) { console.error(err); _avisar(_erroLegivel(tabela, err)); }
+  } catch (e) { console.error(e); _avisar(`Falha de conexão ao gravar em "${tabela}": ${e.message}`); }
+};
+deleteFromStore = async function (tabela, id) {
+  try {
+    const { error } = await supabaseClient.from(tabela).delete().eq('id', id);
+    if (error) { console.error(error); _avisar(`Falha ao excluir em "${tabela}": ${error.message}`); }
+  } catch (e) { console.error(e); _avisar(`Falha de conexão ao excluir em "${tabela}": ${e.message}`); }
+};
+
+function _mostrarBanner(msgs) {
+  let b = document.getElementById('banner-supabase');
+  if (!msgs.length) { if (b) b.remove(); return; }
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'banner-supabase'; b.className = 'alert alert-danger';
+    const c = document.getElementById('content'); c.insertBefore(b, c.firstChild);
+  }
+  b.innerHTML = '<strong><i class="fa-solid fa-triangle-exclamation me-1"></i>Sem sincronização com o Supabase.</strong><br>' + msgs.map(_esc).join('<br>');
+}
+
+async function _diagnosticarSupabase() {
+  const probs = [];
+  if (/SEU_PROJETO|SUA_CHAVE/.test(SUPABASE_URL + SUPABASE_ANON_KEY)) {
+    probs.push('As credenciais (SUPABASE_URL e SUPABASE_ANON_KEY) no index.html ainda estão com o texto de exemplo.');
+  } else {
+    for (const t of _TABELAS) {
+      try {
+        const { error } = await supabaseClient.from(t).select('id').limit(1);
+        if (error) probs.push(`Tabela "${t}": ${error.message}`);
+      } catch (e) { probs.push('Falha de conexão: ' + e.message); break; }
+    }
+  }
+  _supabaseOk = probs.length === 0;
+  _mostrarBanner(probs);
+  return probs;
+}
+
+importarBackup = async function () {
+  const fi = document.getElementById('file-import');
+  if (!fi.files.length) { alert('Selecione um arquivo de backup (.json) primeiro.'); return; }
+  let dados;
+  try { dados = JSON.parse(await fi.files[0].text()); }
+  catch (e) { alert('Erro ao processar o arquivo JSON de backup.'); return; }
+  if (!dados || !(dados.materiais || dados.usuarios || dados.solicitacoes)) { alert('O arquivo fornecido é inválido ou incompatível.'); return; }
+  if (!confirm('Deseja realmente restaurar os dados do backup e enviá-los para o Supabase?')) return;
+
+  const probs = await _diagnosticarSupabase();
+  if (probs.length) {
+    alert('Importação cancelada: não há conexão funcionando com o Supabase.\n\n' + probs.join('\n') + '\n\nNenhum dado foi alterado.');
+    return;
+  }
+
+  _silencio = true; _filaAvisos.length = 0;
+  const erros = [], resumo = [], enviados = {};
+  try {
+    if (dados.config) {
+      const err = await _upsertAdaptativo('config', [{ id: 'main', logo: dados.config.logo || '', sidebar_icon: dados.config.sidebarIcon || dados.config.sidebar_icon || '' }]);
+      if (err) erros.push('config: ' + err.message);
+    }
+    for (const t of ['materiais', 'compras', 'movimentacoes', 'usuarios', 'solicitacoes']) {
+      const itens = dados[t] || [], lote = t === 'materiais' ? 20 : 100;
+      let ok = 0;
+      for (let i = 0; i < itens.length; i += lote) {
+        const parte = itens.slice(i, i + lote);
+        const err = await _upsertAdaptativo(t, parte);
+        if (err) { erros.push(`${t}: ${err.message}`); break; }
+        ok += parte.length;
+      }
+      enviados[t] = ok;
+      resumo.push(`${t}: ${ok} de ${itens.length} enviados`);
+    }
+    // Confere se o banco realmente devolve o que foi gravado
+    for (const t of Object.keys(enviados)) {
+      if (!enviados[t]) continue;
+      const { count, error } = await supabaseClient.from(t).select('id', { count: 'exact', head: true });
+      if (error) erros.push(`${t}: não foi possível ler de volta (${error.message})`);
+      else if ((count || 0) < enviados[t]) erros.push(`${t}: foram enviados ${enviados[t]}, mas a leitura devolve só ${count || 0}. Verifique a política de leitura (SELECT/RLS) da tabela.`);
+    }
+  } catch (e) { erros.push('Falha de conexão: ' + e.message); }
+  finally { _silencio = false; }
+
+  const avisos = [...new Set(_filaAvisos)];
+  _filaAvisos.length = 0;
+  if (erros.length) {
+    alert('A importação NÃO foi concluída com sucesso.\n\n' + erros.join('\n') + '\n\n' + resumo.join('\n') + (avisos.length ? '\n\nAvisos:\n' + avisos.join('\n') : ''));
+    return;
+  }
+  alert('Backup restaurado e conferido no Supabase.\n\n' + resumo.join('\n') + (avisos.length ? '\n\nAtenção:\n' + avisos.join('\n') : ''));
+  location.reload();
+};
+
 /* ---------- Partida: abre direto em Solicitar Retirada ---------- */
 autenticarPorMatricula('');
+
